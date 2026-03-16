@@ -1105,23 +1105,35 @@ function assignBucketFE(score){
 }
 async function callGAS(action,data){const payload=encodeURIComponent(JSON.stringify({action,token:APP.token,data}));const res=await fetch(GAS_URL+'?payload='+payload,{redirect:'follow'});if(!res.ok)throw new Error('HTTP '+res.status);return await res.json();}
 document.addEventListener('DOMContentLoaded', () => {
-  setLang('en');
-  // Auto sign-in returning users
+  const savedLang = localStorage.getItem('appraisal_lang');
+  setLang(savedLang || 'en');
+
+  // If returning user, show loading briefly while Google auto-signs them in
   const savedEmail = localStorage.getItem('appraisal_user_email');
-  const savedLang  = localStorage.getItem('appraisal_lang');
-  if (savedLang) setLang(savedLang);
-  if (savedEmail && typeof google !== 'undefined') {
+  if (savedEmail) {
     showScreen('loading');
-    setLoading('Signing you in automatically…');
+    setLoading('Signing you in…');
+    // Fallback — if Google auto sign-in doesn't fire in 4 seconds, show login
+    setTimeout(() => {
+      if (document.getElementById('screen-login').classList.contains('active') === false &&
+          document.getElementById('screen-app').classList.contains('active') === false) {
+        showScreen('login');
+      }
+    }, 4000);
   }
-  if (typeof google !== 'undefined') {
+});
+
+// Called by Google when its library finishes loading
+function onGoogleLibraryLoad() {
+  const savedEmail = localStorage.getItem('appraisal_user_email');
+  if (savedEmail) {
     google.accounts.id.prompt(notification => {
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
         showScreen('login');
       }
     });
   }
-});
+}
 </script>
 </body>
 </html>
