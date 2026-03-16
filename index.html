@@ -419,6 +419,7 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
     </div>
     <div class="dash-card">
       <h4>Audit Log</h4>
+      <p class="text-sm text-mid mb-8">The Audit Log is an automatic record of every action taken in the system — who submitted, who edited, when Part C was released, and when the cycle was locked. It helps you verify that the appraisal ran correctly and provides a trail if any dispute arises. Staff can only see their own entries; you see everything.</p>
       <button class="btn btn-sm btn-outline mb-8" onclick="loadAuditLog()">Load Audit Log</button>
       <div id="admin-audit-table" style="overflow-x:auto;max-height:400px;overflow-y:auto"></div>
     </div>
@@ -931,7 +932,12 @@ async function savePartA(){
 // PART B
 // ═══════════════════════════════════════════════
 function renderPartBForm() {
-  if(!APP.user.managerEmail){setEl('partb-no-manager',L('noManagerMsg'),true,true);document.getElementById('save-partb-btn').disabled=true;return;}
+  if(!APP.user.managerEmail){
+    // CEO has no manager — hide Part B form silently, no warning shown
+    const partbForm = document.getElementById('tab-partb');
+    if(partbForm) partbForm.innerHTML='<div style="padding:40px 24px;text-align:center;color:var(--stone)"><p style="font-size:32px;margin-bottom:12px">📋</p><p style="font-size:15px">Part B is for staff and managers to give feedback on their manager.<br>As CEO, you do not have a manager above you in this system.</p></div>';
+    return;
+  }
   safeText('partb-manager-name', APP.user.managerEmail);
   const bqs=L('partB');
   let html='';
@@ -1005,6 +1011,15 @@ async function savePartC(){
 // ═══════════════════════════════════════════════
 function renderDashboard(){
   const d=APP.myData;
+  // CEO sees only the CEO org dashboard, not their own personal score card
+  if(APP.user.role==='CEO'){
+    const pd=document.getElementById('personal-dash');
+    if(pd) pd.style.display='none';
+    show('ceo-dash');
+    loadCEODashboard();
+    return;
+  }
+  // Manager: show personal score + team data
   const sa=d.partA&&d.partA.submitted?(d.partA.score||0):0;
   const sb=d.partB&&d.partB.submitted?(d.partB.score||0):0;
   const sc=(d.partC&&d.partC.available)?(d.partC.score||0):0;
@@ -1016,13 +1031,14 @@ function renderDashboard(){
   safeText('dash-score-b', sb);
   safeText('dash-score-c', sc);
   const partCBox=document.getElementById('dash-partc-content');
-  if(d.partC&&d.partC.available){
-    const s=d.partC.data;
-    partCBox.innerHTML=`<p class="text-sm text-mid mb-8">${L('partCBy')} <strong>${d.partC.managerName}</strong> &nbsp;|&nbsp; Total: <strong>${d.partC.score}/25</strong></p><div class="feedback-scores">${['C1','C2','C3','C4'].map((k,i)=>`<span class="fscore">${L('partC')[i].label}: <strong>${s[k]}/5</strong></span>`).join('')}</div>`;
-  } else if(APP.partCStatus&&APP.partCStatus.released){ partCBox.innerHTML=`<p class="text-sm text-mid">${L('partCPending')}</p>`; }
-  else { partCBox.innerHTML=`<p class="text-sm text-mid">${L('partCNotReleased')}</p>`; }
-  document.getElementById('dash-guidance').innerHTML=`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap"><div class="grade-badge grade-${bucket.grade}" style="width:44px;height:44px;font-size:22px">${bucket.grade}</div><div><p><strong>Raise guidance:</strong> ${bucket.raise}</p><p class="text-sm text-mid mt-8"><strong>Development:</strong> ${bucket.action}</p></div></div>`;
-  if(APP.user.role==='CEO') show('ceo-dash');
+  if(partCBox){
+    if(d.partC&&d.partC.available){
+      const s=d.partC.data;
+      partCBox.innerHTML=`<p class="text-sm text-mid mb-8">${L('partCBy')} <strong>${d.partC.managerName}</strong> &nbsp;|&nbsp; Total: <strong>${d.partC.score}/25</strong></p><div class="feedback-scores">${['C1','C2','C3','C4'].map((k,i)=>`<span class="fscore">${L('partC')[i].label}: <strong>${s[k]}/5</strong></span>`).join('')}</div>`;
+    } else if(APP.partCStatus&&APP.partCStatus.released){ partCBox.innerHTML=`<p class="text-sm text-mid">${L('partCPending')}</p>`; }
+    else { partCBox.innerHTML=`<p class="text-sm text-mid">${L('partCNotReleased')}</p>`; }
+  }
+  safeHtml('dash-guidance',`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap"><div class="grade-badge grade-${bucket.grade}" style="width:44px;height:44px;font-size:22px">${bucket.grade}</div><div><p><strong>Raise guidance:</strong> ${bucket.raise}</p><p class="text-sm text-mid mt-8"><strong>Development:</strong> ${bucket.action}</p></div></div>`);
 }
 async function loadCEODashboard(){
   const res=await callGAS('getCEODashboard',{});if(!res.success)return;
