@@ -232,7 +232,7 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
 
     <p id="login-error" style="display:none;background:var(--red-lt);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px"></p>
 
-    <div id="g_id_onload" data-client_id="348873053371-guktbqs18sfnkrr4sooh1sl33t3ci78n.apps.googleusercontent.com" data-callback="handleGoogleSignIn" data-auto_prompt="false"></div>
+    <div id="g_id_onload" data-client_id="348873053371-guktbqs18sfnkrr4sooh1sl33t3ci78n.apps.googleusercontent.com" data-callback="handleGoogleSignIn" data-auto_prompt="true" data-cancel_on_tap_outside="false"></div>
     <div class="g_id_signin" data-type="standard" data-theme="outline" data-size="large" data-text="signin_with" data-width="340" style="display:flex;justify-content:center"></div>
     <p class="login-divider" id="login-footer-note">— secure sign-in via Google —</p>
     <p style="font-size:12px;color:var(--stone)" id="login-privacy">Your responses are confidential and stored securely.</p>
@@ -707,7 +707,9 @@ async function handleGoogleSignIn(response) {
     const result = await callGAS('getUser',{});
     if (!result||!result.success||!result.user) { showLoginError('Your email is not registered in the appraisal system. Please contact the admin.'); showScreen('login'); return; }
     APP.user = result.user;
-    await initApp();
+localStorage.setItem('appraisal_user_email', result.user.email);
+localStorage.setItem('appraisal_lang', APP.lang);
+await initApp();
   } catch(e) { showLoginError('Login failed: '+e.message); showScreen('login'); }
 }
 function showLoginError(msg) { const el=document.getElementById('login-error'); el.textContent=msg; el.style.display='block'; }
@@ -718,6 +720,8 @@ function showLoginError(msg) { const el=document.getElementById('login-error'); 
 function logout() {
   if (!confirm('Sign out?')) return;
   if (typeof google!=='undefined'&&google.accounts&&APP.user) google.accounts.id.revoke(APP.user.email,()=>{});
+  localStorage.removeItem('appraisal_user_email');
+localStorage.removeItem('appraisal_lang');
   APP = { user:null, token:null, myData:null, questions:null, cycleStatus:null, partCStatus:null, cycleLocked:false, directReports:[], allUsers:[], lang:APP.lang };
   Object.keys(SCALES).forEach(k=>delete SCALES[k]);
   showScreen('login');
@@ -1100,7 +1104,24 @@ function assignBucketFE(score){
   return         {grade:'F',label:'At Risk',           raise:'No raise',    action:'Immediate intervention required'};
 }
 async function callGAS(action,data){const payload=encodeURIComponent(JSON.stringify({action,token:APP.token,data}));const res=await fetch(GAS_URL+'?payload='+payload,{redirect:'follow'});if(!res.ok)throw new Error('HTTP '+res.status);return await res.json();}
-document.addEventListener('DOMContentLoaded',()=>setLang('en'));
+document.addEventListener('DOMContentLoaded', () => {
+  setLang('en');
+  // Auto sign-in returning users
+  const savedEmail = localStorage.getItem('appraisal_user_email');
+  const savedLang  = localStorage.getItem('appraisal_lang');
+  if (savedLang) setLang(savedLang);
+  if (savedEmail && typeof google !== 'undefined') {
+    showScreen('loading');
+    setLoading('Signing you in automatically…');
+  }
+  if (typeof google !== 'undefined') {
+    google.accounts.id.prompt(notification => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        showScreen('login');
+      }
+    });
+  }
+});
 </script>
 </body>
 </html>
