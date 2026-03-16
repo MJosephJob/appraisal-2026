@@ -232,7 +232,7 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
 
     <p id="login-error" style="display:none;background:var(--red-lt);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px"></p>
 
-    <div id="g_id_onload" data-client_id="348873053371-guktbqs18sfnkrr4sooh1sl33t3ci78n.apps.googleusercontent.com" data-callback="handleGoogleSignIn" data-auto_prompt="true" data-cancel_on_tap_outside="false"></div>
+    <div id="g_id_onload" data-client_id="48873053371-guktbqs18sfnkrr4sooh1sl33t3ci78n.apps.googleusercontent.com" data-callback="handleGoogleSignIn" data-auto_prompt="true" data-cancel_on_tap_outside="false"></div>
     <div class="g_id_signin" data-type="standard" data-theme="outline" data-size="large" data-text="signin_with" data-width="340" style="display:flex;justify-content:center"></div>
     <p class="login-divider" id="login-footer-note">— secure sign-in via Google —</p>
     <p style="font-size:12px;color:var(--stone)" id="login-privacy">Your responses are confidential and stored securely.</p>
@@ -707,12 +707,11 @@ async function handleGoogleSignIn(response) {
     const result = await callGAS('getUser',{});
     if (!result||!result.success||!result.user) { showLoginError('Your email is not registered in the appraisal system. Please contact the admin.'); showScreen('login'); return; }
     APP.user = result.user;
-localStorage.setItem('appraisal_user_email', result.user.email);
-localStorage.setItem('appraisal_lang', APP.lang);
-await initApp();
+    localStorage.setItem('appraisal_lang', APP.lang);
+    await initApp();
   } catch(e) { showLoginError('Login failed: '+e.message); showScreen('login'); }
 }
-function showLoginError(msg) { const el=document.getElementById('login-error'); el.textContent=msg; el.style.display='block'; }
+function showLoginError(msg) { const el=document.getElementById('login-error'); if(el){ el.textContent=msg; el.style.display='block'; } else { console.error('Login error:', msg); } }
 
 // ═══════════════════════════════════════════════
 // LOGOUT
@@ -720,10 +719,9 @@ function showLoginError(msg) { const el=document.getElementById('login-error'); 
 function logout() {
   if (!confirm('Sign out?')) return;
   if (typeof google!=='undefined'&&google.accounts&&APP.user) google.accounts.id.revoke(APP.user.email,()=>{});
-  localStorage.removeItem('appraisal_user_email');
-localStorage.removeItem('appraisal_lang');
   APP = { user:null, token:null, myData:null, questions:null, cycleStatus:null, partCStatus:null, cycleLocked:false, directReports:[], allUsers:[], lang:APP.lang };
   Object.keys(SCALES).forEach(k=>delete SCALES[k]);
+  localStorage.removeItem('appraisal_lang');
   showScreen('login');
   if (typeof google!=='undefined'&&google.accounts) { google.accounts.id.initialize({client_id:document.getElementById('g_id_onload').dataset.client_id,callback:handleGoogleSignIn}); google.accounts.id.renderButton(document.querySelector('.g_id_signin'),{type:'standard',theme:'outline',size:'large',text:'signin_with',width:'340'}); }
 }
@@ -753,37 +751,37 @@ async function initApp() {
 }
 
 function applyLangToApp() {
-  document.getElementById('user-name-header').textContent = APP.user.name;
-  document.getElementById('user-avatar').textContent      = APP.user.name.charAt(0).toUpperCase();
-  document.getElementById('header-subtitle').textContent  = APP.user.role + ' · ' + (APP.user.team||'Staff');
-  document.getElementById('logout-btn').textContent       = L('logoutBtn');
-  document.getElementById('notif-title').textContent      = L('notifTitle');
-  document.getElementById('tab-btn-home').textContent     = L('tabHome');
-  document.getElementById('tab-btn-parta').textContent    = L('tabPartA');
-  document.getElementById('tab-btn-partb').textContent    = L('tabPartB');
-  document.getElementById('tab-btn-partc').textContent    = L('tabPartC');
-  document.getElementById('tab-btn-dashboard').textContent= L('tabDashboard');
-  document.getElementById('tab-btn-settings').textContent = L('tabSettings');
-  document.getElementById('tab-btn-admin').textContent    = L('tabAdmin');
-  document.getElementById('parta-title').textContent      = L('partATitle');
-  document.getElementById('parta-desc').textContent       = L('partADesc');
-  document.getElementById('partb-title').textContent      = L('partBTitle');
-  document.getElementById('partb-desc').innerHTML         = L('partBDesc');
-  document.getElementById('partc-title').textContent      = L('partCTitle');
-  document.getElementById('partc-desc').textContent       = L('partCDesc');
-  document.getElementById('partc-feedback-title').textContent = L('partCFeedbackTitle');
-  document.getElementById('guidance-title').textContent   = L('guidanceTitle');
-  document.getElementById('select-emp-label').textContent = L('selectEmpLabel');
-  document.getElementById('select-emp-option').textContent= L('selectEmpOption');
-  document.getElementById('save-parta-label').textContent = L('savePartA');
-  document.getElementById('save-partb-label').textContent = L('savePartB');
-  document.getElementById('save-partc-label').textContent = L('saveEval');
-  document.getElementById('partb-evaluating-label').textContent = L('partBEvaluating');
-  document.getElementById('team-status-title').textContent = L('teamStatusTitle');
-  document.getElementById('instructions-title').textContent = L('instrTitle');
-  document.getElementById('time-estimate').textContent    = L('timeEst');
-  const instrList = document.getElementById('instructions-list');
-  instrList.innerHTML = L('instrList').map((item,i) => `<li><div class="instr-num">${i+1}</div><span>${item}</span></li>`).join('');
+  // safeText/safeHtml never crash if an element is missing or hidden
+  safeText('user-name-header', APP.user.name);
+  safeText('user-avatar',      APP.user.name.charAt(0).toUpperCase());
+  safeText('header-subtitle',  APP.user.role + ' · ' + (APP.user.team||'Staff'));
+  safeText('logout-btn',       L('logoutBtn'));
+  safeText('notif-title',      L('notifTitle'));
+  safeText('tab-btn-home',     L('tabHome'));
+  safeText('tab-btn-parta',    L('tabPartA'));
+  safeText('tab-btn-partb',    L('tabPartB'));
+  safeText('tab-btn-partc',    L('tabPartC'));
+  safeText('tab-btn-dashboard',L('tabDashboard'));
+  safeText('tab-btn-settings', L('tabSettings'));
+  safeText('tab-btn-admin',    L('tabAdmin'));
+  safeText('parta-title',      L('partATitle'));
+  safeText('parta-desc',       L('partADesc'));
+  safeText('partb-title',      L('partBTitle'));
+  safeHtml('partb-desc',       L('partBDesc'));
+  safeText('partc-title',      L('partCTitle'));
+  safeText('partc-desc',       L('partCDesc'));
+  safeText('partc-feedback-title', L('partCFeedbackTitle'));
+  safeText('guidance-title',   L('guidanceTitle'));
+  safeText('select-emp-label', L('selectEmpLabel'));
+  safeText('select-emp-option',L('selectEmpOption'));
+  safeText('save-parta-label', L('savePartA'));
+  safeText('save-partb-label', L('savePartB'));
+  safeText('save-partc-label', L('saveEval'));
+  safeText('partb-evaluating-label', L('partBEvaluating'));
+  safeText('team-status-title',L('teamStatusTitle'));
+  safeText('instructions-title',L('instrTitle'));
+  safeText('time-estimate',    L('timeEst'));
+  safeHtml('instructions-list', L('instrList').map((item,i) => `<li><div class="instr-num">${i+1}</div><span>${item}</span></li>`).join(''));
 }
 
 // ═══════════════════════════════════════════════
@@ -804,12 +802,14 @@ function switchTab(name) {
 // NOTIFICATIONS
 // ═══════════════════════════════════════════════
 async function loadNotifications() {
-  const res = await callGAS('getNotifications',{});
-  if (!res.success) return;
-  const warnCount = res.notifications.filter(n=>n.type==='warn').length;
-  const badge = document.getElementById('notif-badge');
-  if (warnCount>0) { badge.textContent=warnCount; badge.style.display='block'; }
-  document.getElementById('notif-list').innerHTML = res.notifications.map(n => `<div class="notif-item ${n.type}"><span>${n.icon}</span><span>${n.message}</span></div>`).join('');
+  try {
+    const res = await callGAS('getNotifications',{});
+    if (!res||!res.success) return;
+    const warnCount = res.notifications.filter(n=>n.type==='warn').length;
+    const badge = document.getElementById('notif-badge');
+    if (badge&&warnCount>0) { badge.textContent=warnCount; badge.style.display='block'; }
+    safeHtml('notif-list', res.notifications.map(n => `<div class="notif-item ${n.type}"><span>${n.icon}</span><span>${n.message}</span></div>`).join(''));
+  } catch(e) { console.warn('Notifications failed:', e.message); }
 }
 function toggleNotifications(){ document.getElementById('notif-dropdown').classList.toggle('open'); }
 function closeNotifications() { document.getElementById('notif-dropdown').classList.remove('open'); }
@@ -988,7 +988,7 @@ function loadPartCForEmployee(){
 async function savePartC(){
   const btn=document.getElementById('save-partc-btn'); hideMsgs('partc');
   const email=document.getElementById('partc-employee-select').value;
-  if(!email){setEl('partc-error-msg',L('selectEmpOption'),true,true);return;}
+  if(!email){setEl('partc-error-msg','Please select an employee before saving.',true,true);return;}
   const data={employeeEmail:email};
   for(const k of['C1','C2','C3','C4']){data[k]=SCALES[k]||0;if(!data[k]){setEl('partc-error-msg','Please rate all four areas.',true,true);return;}}
   btn.disabled=true; btn.querySelector('span').textContent='…';
@@ -1096,6 +1096,9 @@ async function loadAuditLog(){const res=await callGAS('getAuditLog',{});if(!res.
 function show(id){const el=document.getElementById(id);if(el)el.classList.remove('hidden');}
 function hideMsgs(prefix){['locked','saved','error'].forEach(t=>{const el=document.getElementById(prefix+'-'+t+'-msg');if(el)el.classList.add('hidden');});}
 function setEl(id,text,isHtml,visible){const el=document.getElementById(id);if(!el)return;if(isHtml)el.innerHTML=text;else el.textContent=text;el.classList.toggle('hidden',!visible);}
+// Safe setter — never crashes if element doesn't exist
+function safeText(id,text){const el=document.getElementById(id);if(el)el.textContent=text;}
+function safeHtml(id,html){const el=document.getElementById(id);if(el)el.innerHTML=html;}
 function assignBucketFE(score){
   if(score>=85)return{grade:'A',label:'Exceptional',        raise:'5–8%',        action:'High-potential; stretch projects'};
   if(score>=70)return{grade:'B',label:'Strong',             raise:'3–5%',        action:'Specialize; leadership readiness'};
@@ -1105,35 +1108,10 @@ function assignBucketFE(score){
 }
 async function callGAS(action,data){const payload=encodeURIComponent(JSON.stringify({action,token:APP.token,data}));const res=await fetch(GAS_URL+'?payload='+payload,{redirect:'follow'});if(!res.ok)throw new Error('HTTP '+res.status);return await res.json();}
 document.addEventListener('DOMContentLoaded', () => {
-  const savedLang = localStorage.getItem('appraisal_lang');
-  setLang(savedLang || 'en');
-
-  // If returning user, show loading briefly while Google auto-signs them in
-  const savedEmail = localStorage.getItem('appraisal_user_email');
-  if (savedEmail) {
-    showScreen('loading');
-    setLoading('Signing you in…');
-    // Fallback — if Google auto sign-in doesn't fire in 4 seconds, show login
-    setTimeout(() => {
-      if (document.getElementById('screen-login').classList.contains('active') === false &&
-          document.getElementById('screen-app').classList.contains('active') === false) {
-        showScreen('login');
-      }
-    }, 4000);
-  }
+  // Restore saved language preference, default English
+  const savedLang = localStorage.getItem('appraisal_lang') || 'en';
+  setLang(savedLang);
 });
-
-// Called by Google when its library finishes loading
-function onGoogleLibraryLoad() {
-  const savedEmail = localStorage.getItem('appraisal_user_email');
-  if (savedEmail) {
-    google.accounts.id.prompt(notification => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        showScreen('login');
-      }
-    });
-  }
-}
 </script>
 </body>
 </html>
