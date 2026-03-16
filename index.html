@@ -281,6 +281,9 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
       <p  id="welcome-msg"></p>
       <p  class="appreciate" id="welcome-appreciate"></p>
     </div>
+    <div class="alert alert-info" style="margin-bottom:16px;font-size:13px">
+      🔒 <strong>Confidentiality Notice:</strong> Your responses in Part A and Part B are stored securely in the organisation's system. Part A (self-evaluation) is visible to your manager and the CEO. Part B (feedback on your manager) is visible to the CEO only — your manager does not see it until the CEO chooses to share it. Part C (your manager's evaluation of you) is released to you only when the CEO approves. No response is shared outside this appraisal process.
+    </div>
     <div class="instructions-card" id="instructions-card">
       <h4 id="instructions-title">📋 How to fill this appraisal</h4>
       <ul class="instr-list" id="instructions-list"></ul>
@@ -354,9 +357,19 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
     </div>
     <div id="ceo-dash" class="hidden mt-16">
       <div class="flex justify-between items-center mb-16"><h3 style="font-size:18px;color:var(--forest)" id="ceo-dash-title">CEO Dashboard</h3><button class="btn btn-sm btn-outline" onclick="loadCEODashboard()">↺ Refresh</button></div>
+      <div class="dash-card" id="completion-tracker-card">
+        <h4>📊 Submission Tracker</h4>
+        <div id="completion-tracker"><p class="text-sm text-mid">Loading…</p></div>
+      </div>
       <div class="dash-card"><h4>Org Scorecard</h4><div id="ceo-org-table" style="overflow-x:auto"></div></div>
       <div class="dash-card"><h4>Manager Effectiveness</h4><div id="ceo-manager-table" style="overflow-x:auto"></div></div>
       <div class="dash-card"><h4>Part B — Full Transparency</h4><p class="text-xs text-mid mb-8">All upward feedback — visible to CEO only.</p><div id="ceo-partb-list"></div></div>
+      <div class="dash-card">
+        <h4>📥 Export Summary</h4>
+        <p class="text-sm text-mid mb-8">Download a formatted summary of all scores for board meetings or leadership reviews.</p>
+        <button class="btn btn-primary btn-sm" onclick="exportSummary()">⬇ Download CSV Summary</button>
+        <span id="export-msg" class="text-sm text-mid" style="margin-left:10px"></span>
+      </div>
     </div>
   </div>
 
@@ -1042,6 +1055,39 @@ function renderDashboard(){
 }
 async function loadCEODashboard(){
   const res=await callGAS('getCEODashboard',{});if(!res.success)return;
+
+  // Completion tracker
+  const total = res.employees.length;
+  const doneA = res.orgScorecard.filter(e=>e.scoreA>0).length;
+  const doneB = res.orgScorecard.filter(e=>e.scoreB>0).length;
+  const doneC = res.orgScorecard.filter(e=>e.scoreC>0).length;
+  const pctA  = total>0?Math.round((doneA/total)*100):0;
+  const pctB  = total>0?Math.round((doneB/total)*100):0;
+  const pctC  = total>0?Math.round((doneC/total)*100):0;
+  safeHtml('completion-tracker', `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:10px">
+      <div style="text-align:center;background:var(--cream-dk);border-radius:10px;padding:16px">
+        <div style="font-size:28px;font-weight:700;color:var(--forest);font-family:'Lora',serif">${doneA}<span style="font-size:14px;opacity:.6"> / ${total}</span></div>
+        <div style="font-size:12px;color:var(--stone);text-transform:uppercase;letter-spacing:.05em;margin:4px 0">Part A Submitted</div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${pctA}%"></div></div>
+        <div style="font-size:11px;color:var(--stone);margin-top:4px">${pctA}% complete</div>
+      </div>
+      <div style="text-align:center;background:var(--cream-dk);border-radius:10px;padding:16px">
+        <div style="font-size:28px;font-weight:700;color:var(--forest);font-family:'Lora',serif">${doneB}<span style="font-size:14px;opacity:.6"> / ${total}</span></div>
+        <div style="font-size:12px;color:var(--stone);text-transform:uppercase;letter-spacing:.05em;margin:4px 0">Part B Submitted</div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${pctB}%"></div></div>
+        <div style="font-size:11px;color:var(--stone);margin-top:4px">${pctB}% complete</div>
+      </div>
+      <div style="text-align:center;background:var(--cream-dk);border-radius:10px;padding:16px">
+        <div style="font-size:28px;font-weight:700;color:var(--forest);font-family:'Lora',serif">${doneC}<span style="font-size:14px;opacity:.6"> / ${total}</span></div>
+        <div style="font-size:12px;color:var(--stone);text-transform:uppercase;letter-spacing:.05em;margin:4px 0">Part C Evaluated</div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${pctC}%"></div></div>
+        <div style="font-size:11px;color:var(--stone);margin-top:4px">${pctC}% complete</div>
+      </div>
+    </div>
+    ${doneA<total ? '<p class="text-xs" style="color:var(--amber);margin-top:4px">⚠ '+( total-doneA)+' staff have not submitted Part A yet.</p>' : '<p class="text-xs" style="color:#065F46">✅ All staff have submitted Part A.</p>'}
+  `);
+  APP._lastDashData = res;
   document.getElementById('ceo-org-table').innerHTML='<table class="data-table"><thead><tr><th>Name</th><th>Team</th><th>Role</th><th>A/50</th><th>B/25</th><th>C/25</th><th>Final</th><th>Grade</th></tr></thead><tbody>'+res.orgScorecard.map(emp=>{const g=emp.bucket?emp.bucket.grade:'?';return`<tr><td><strong>${emp.name}</strong></td><td class="text-mid">${emp.team}</td><td class="text-mid">${emp.role}</td><td>${emp.scoreA}</td><td>${emp.scoreB}</td><td>${emp.scoreC}</td><td><strong>${emp.finalScore}</strong></td><td><span class="grade-badge grade-${g}">${g}</span></td></tr>`;}).join('')+'</tbody></table>';
   document.getElementById('ceo-manager-table').innerHTML='<table class="data-table"><thead><tr><th>Manager</th><th>Respondents</th><th>Avg Score</th><th>Grade</th></tr></thead><tbody>'+res.managerEffectiveness.map(m=>{const g=m.bucket?m.bucket.grade:'?';return`<tr><td><strong>${m.name}</strong><br><span class="text-xs text-mid">${m.email}</span></td><td>${m.count}</td><td>${m.avgScore}%<div class="prog-bar"><div class="prog-fill" style="width:${m.avgScore}%"></div></div></td><td><span class="grade-badge grade-${g}">${g}</span></td></tr>`;}).join('')+'</tbody></table>';
   document.getElementById('ceo-partb-list').innerHTML=res.partBResponses.map(r=>`<div class="feedback-card"><div class="feedback-meta"><strong>${r.submittedBy}</strong> on <strong>${r.managerName}</strong> | ${r.totalScore}/25</div><div class="feedback-scores">${Object.entries(r.scores).map(([k,v])=>`<span class="fscore">${k}: <strong>${v}</strong></span>`).join('')}</div>${r.comment?`<p class="text-sm" style="color:var(--text-mid);margin-top:6px;font-style:italic">"${r.comment}"</p>`:''}</div>`).join('')||'<p class="text-sm text-mid">No Part B responses yet.</p>';
@@ -1122,6 +1168,23 @@ function assignBucketFE(score){
   if(score>=40)return{grade:'D',label:'Developing',         raise:'0–1% / hold', action:'Formal PIP or intensive development'};
   return         {grade:'F',label:'At Risk',           raise:'No raise',    action:'Immediate intervention required'};
 }
+function exportSummary(){
+  const msg = document.getElementById('export-msg');
+  if(!APP._lastDashData){ msg.textContent='Please wait for dashboard to load first.'; return; }
+  const rows = [['Name','Team','Role','Part A (/50)','Part B (/25)','Part C (/25)','Final Score','Grade','Raise Guidance','Development Action']];
+  APP._lastDashData.orgScorecard.forEach(e=>{
+    rows.push([e.name, e.team, e.role, e.scoreA, e.scoreB, e.scoreC, e.finalScore,
+      e.bucket?e.bucket.grade:'?', e.bucket?e.bucket.raise:'', e.bucket?e.bucket.action:'']);
+  });
+  const csv = rows.map(r=>r.map(v=>'"'+(v||'').toString().replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'Appraisal_Summary_'+(APP.cycleStatus?APP.cycleStatus.cycleYear:new Date().getFullYear())+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+  msg.textContent = '✅ Downloaded!'; setTimeout(()=>msg.textContent='', 3000);
+}
+
 async function callGAS(action,data){const payload=encodeURIComponent(JSON.stringify({action,token:APP.token,data}));const res=await fetch(GAS_URL+'?payload='+payload,{redirect:'follow'});if(!res.ok)throw new Error('HTTP '+res.status);return await res.json();}
 document.addEventListener('DOMContentLoaded', () => {
   // Restore saved language preference, default English
