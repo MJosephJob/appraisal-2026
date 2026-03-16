@@ -827,12 +827,13 @@ async function handleGoogleSignIn(response) {
   setLoading('Verifying your account…');
 
   try {
-    const user = await callGAS('getUser', {});
-    if (!user || !user.email) {
-      showError('Your email is not registered in the appraisal system. Please contact the admin.');
-      showScreen('login');
-      return;
-    }
+const result = await callGAS('getUser', {});
+   if (!result || !result.success || !result.user) {
+     showError('Your email is not registered in the appraisal system. Please contact the admin.');
+     showScreen('login');
+     return;
+   }
+   APP.user = result.user;
     APP.user = user;
     await initApp();
   } catch (e) {
