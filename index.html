@@ -232,7 +232,7 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
 
     <p id="login-error" style="display:none;background:var(--red-lt);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px"></p>
 
-    <div id="g_id_onload" data-client_id="348873053371-guktbqs18sfnkrr4sooh1sl33t3ci78n.apps.googleusercontent.com" data-callback="handleGoogleSignIn" data-auto_prompt="true" data-cancel_on_tap_outside="false"></div>
+    <div id="g_id_onload" data-client_id="348873053371-guktbqs18sfnkrr4sooh1sl33t3ci78n.apps.googleusercontent.com" data-callback="handleGoogleSignIn" data-auto_prompt="false"></div>
     <div class="g_id_signin" data-type="standard" data-theme="outline" data-size="large" data-text="signin_with" data-width="340" style="display:flex;justify-content:center"></div>
     <p class="login-divider" id="login-footer-note">— secure sign-in via Google —</p>
     <p style="font-size:12px;color:var(--stone)" id="login-privacy">Your responses are confidential and stored securely.</p>
@@ -684,10 +684,10 @@ function setLang(lang) {
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
   // Update login screen text
-  document.getElementById('login-title').textContent      = L('loginTitle');
-  document.getElementById('login-sub').textContent        = L('loginSub');
-  document.getElementById('login-footer-note').textContent= L('loginFooter');
-  document.getElementById('login-privacy').textContent    = L('loginPrivacy');
+  safeText('login-title', L('loginTitle'));
+  safeText('login-sub', L('loginSub'));
+  safeText('login-footer-note', L('loginFooter'));
+  safeText('login-privacy', L('loginPrivacy'));
   document.getElementById('login-year-badge').textContent = new Date().getFullYear() + ' ' + (lang==='en'?'Appraisal':lang==='hi'?'मूल्यांकन':'मूल्यमापन');
 }
 
@@ -695,7 +695,7 @@ function setLang(lang) {
 // SCREENS
 // ═══════════════════════════════════════════════
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-'+id).classList.add('active'); }
-function setLoading(msg){ document.getElementById('loading-msg').textContent=msg; }
+function setLoading(msg){ safeText('loading-msg', msg); }
 
 // ═══════════════════════════════════════════════
 // GOOGLE AUTH
@@ -823,9 +823,9 @@ function renderHome() {
   const name = APP.user.name.split(' ')[0];
   const year = APP.cycleStatus.cycleYear;
 
-  document.getElementById('welcome-heading').textContent    = L('welcomeHeading').replace('{name}',name);
-  document.getElementById('welcome-msg').textContent        = L('welcomeMsg').replace('{year}',year);
-  document.getElementById('welcome-appreciate').textContent = L('welcomeAppreciate');
+  safeText('welcome-heading', L('welcomeHeading').replace('{name}',name));
+  safeText('welcome-msg', L('welcomeMsg').replace('{year}',year));
+  safeText('welcome-appreciate', L('welcomeAppreciate'));
 
   if (locked) { setEl('cycle-locked-banner', L('cycleLockedBanner'), false, true); setEl('cycle-open-banner','',false,false); }
   else        { setEl('cycle-open-banner', L('cycleOpenBanner'), false, true); setEl('cycle-locked-banner','',false,false); }
@@ -921,7 +921,7 @@ async function savePartA(){
   btn.disabled=true; btn.querySelector('span').textContent='…';
   try {
     const res=await callGAS('submitPartA',data);
-    if(res.success){setEl('parta-saved-msg','✅ '+L('savePartA')+' — '+res.score+'/50',true,true);APP.myData.partA={submitted:true,score:res.score,data};document.getElementById('parta-save-status').textContent=L('savedJustNow');renderHome();}
+    if(res.success){setEl('parta-saved-msg','✅ '+L('savePartA')+' — '+res.score+'/50',true,true);APP.myData.partA={submitted:true,score:res.score,data};safeText('parta-save-status', L('savedJustNow'));renderHome();}
     else setEl('parta-error-msg',res.error||'Save failed.',true,true);
   }catch(e){setEl('parta-error-msg','Network error: '+e.message,true,true);}
   btn.disabled=false; btn.querySelector('span').textContent=L('savePartA');
@@ -932,7 +932,7 @@ async function savePartA(){
 // ═══════════════════════════════════════════════
 function renderPartBForm() {
   if(!APP.user.managerEmail){setEl('partb-no-manager',L('noManagerMsg'),true,true);document.getElementById('save-partb-btn').disabled=true;return;}
-  document.getElementById('partb-manager-name').textContent=APP.user.managerEmail;
+  safeText('partb-manager-name', APP.user.managerEmail);
   const bqs=L('partB');
   let html='';
   bqs.forEach(q=>{html+=`<div class="q-block"><div class="q-label">${q.label}</div><div class="q-text">${q.text}</div><div class="scale-wrap" id="scale-wrap-${q.key}"></div></div>`;});
@@ -955,7 +955,7 @@ async function savePartB(){
   btn.disabled=true; btn.querySelector('span').textContent='…';
   try{
     const res=await callGAS('submitPartB',data);
-    if(res.success){setEl('partb-saved-msg','✅ '+L('savePartB')+' — '+res.score+'/25',true,true);APP.myData.partB={submitted:true,score:res.score,data};document.getElementById('partb-save-status').textContent=L('savedJustNow');renderHome();}
+    if(res.success){setEl('partb-saved-msg','✅ '+L('savePartB')+' — '+res.score+'/25',true,true);APP.myData.partB={submitted:true,score:res.score,data};safeText('partb-save-status', L('savedJustNow'));renderHome();}
     else setEl('partb-error-msg',res.error||'Save failed.',true,true);
   }catch(e){setEl('partb-error-msg','Network error: '+e.message,true,true);}
   btn.disabled=false; btn.querySelector('span').textContent=L('savePartB');
@@ -994,7 +994,7 @@ async function savePartC(){
   btn.disabled=true; btn.querySelector('span').textContent='…';
   try{
     const res=await callGAS('submitPartC',data);
-    if(res.success){setEl('partc-saved-msg','✅ '+L('saveEval')+' — '+res.score+'/25',true,true);const idx=(APP.myData.partCSubmitted||[]).findIndex(x=>x.employeeEmail.toLowerCase()===email.toLowerCase());const entry={employeeEmail:email,scores:{C1:data.C1,C2:data.C2,C3:data.C3,C4:data.C4},totalScore:res.score};if(!APP.myData.partCSubmitted)APP.myData.partCSubmitted=[];if(idx>=0)APP.myData.partCSubmitted[idx]=entry;else APP.myData.partCSubmitted.push(entry);document.getElementById('partc-save-status').textContent=L('savedJustNow');renderHome();}
+    if(res.success){setEl('partc-saved-msg','✅ '+L('saveEval')+' — '+res.score+'/25',true,true);const idx=(APP.myData.partCSubmitted||[]).findIndex(x=>x.employeeEmail.toLowerCase()===email.toLowerCase());const entry={employeeEmail:email,scores:{C1:data.C1,C2:data.C2,C3:data.C3,C4:data.C4},totalScore:res.score};if(!APP.myData.partCSubmitted)APP.myData.partCSubmitted=[];if(idx>=0)APP.myData.partCSubmitted[idx]=entry;else APP.myData.partCSubmitted.push(entry);safeText('partc-save-status', L('savedJustNow'));renderHome();}
     else setEl('partc-error-msg',res.error||'Save failed.',true,true);
   }catch(e){setEl('partc-error-msg','Network error: '+e.message,true,true);}
   btn.disabled=false; btn.querySelector('span').textContent=L('saveEval');
@@ -1009,12 +1009,12 @@ function renderDashboard(){
   const sb=d.partB&&d.partB.submitted?(d.partB.score||0):0;
   const sc=(d.partC&&d.partC.available)?(d.partC.score||0):0;
   const total=Math.min(sa+sb+sc,100); const bucket=assignBucketFE(total);
-  document.getElementById('dash-final-score').textContent=total;
-  document.getElementById('dash-grade-pill').textContent='Grade '+bucket.grade;
-  document.getElementById('dash-grade-label').textContent=bucket.label;
-  document.getElementById('dash-score-a').textContent=sa;
-  document.getElementById('dash-score-b').textContent=sb;
-  document.getElementById('dash-score-c').textContent=sc;
+  safeText('dash-final-score', total);
+  safeText('dash-grade-pill', 'Grade '+bucket.grade);
+  safeText('dash-grade-label', bucket.label);
+  safeText('dash-score-a', sa);
+  safeText('dash-score-b', sb);
+  safeText('dash-score-c', sc);
   const partCBox=document.getElementById('dash-partc-content');
   if(d.partC&&d.partC.available){
     const s=d.partC.data;
