@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Annual Appraisal — Staff Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+/* ═══════════════════════════════════════
+   DESIGN SYSTEM — Warm Institutional
+   ═══════════════════════════════════════ */
+:root {
+  --forest:    #1B4332;
+  --forest-md: #2D6A4F;
+  --forest-lt: #D1FAE5;
+  --amber:     #D97706;
+  --amber-lt:  #FEF3C7;
+  --cream:     #FAFAF5;
+  --cream-dk:  #F0EDE6;
+  --stone:     #78716C;
+  --stone-lt:  #E7E5E4;
+  --text:      #1C1917;
+  --text-mid:  #57534E;
+  --red:       #DC2626;
+  --red-lt:    #FEE2E2;
+  --blue-lt:   #EFF6FF;
+  --radius:    10px;
+  --shadow:    0 2px 12px rgba(27,67,50,0.10);
+  --shadow-lg: 0 8px 32px rgba(27,67,50,0.14);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+}
+h1,h2,h3,h4 { font-family: 'Lora', serif; font-weight: 700; }
+a { color: var(--forest); }
+input, textarea, select {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+}
+button { cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+/* ─── SCREEN CONTROLLER ─── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ─── LOGIN SCREEN ─── */
+#screen-login {
+  background: var(--forest);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+}
+.login-card {
+  background: var(--cream);
+  border-radius: 18px;
+  padding: 48px 40px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: var(--shadow-lg);
+}
+.org-logo {
+  width: 72px; height: 72px;
+  background: var(--forest);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 24px;
+}
+.org-logo svg { width: 38px; height: 38px; fill: white; }
+.login-card h1 { font-size: 26px; color: var(--forest); margin-bottom: 6px; }
+.login-card p  { color: var(--text-mid); margin-bottom: 32px; font-size: 14px; }
+.login-divider { font-size: 12px; color: var(--stone); margin: 18px 0; text-transform: uppercase; letter-spacing: 0.08em; }
+.year-badge {
+  display: inline-block; background: var(--amber-lt); color: var(--amber);
+  font-weight: 600; font-size: 12px; padding: 3px 12px;
+  border-radius: 20px; margin-bottom: 16px;
+}
+
+/* ─── LOADING SCREEN ─── */
+#screen-loading {
+  background: var(--cream);
+  align-items: center; justify-content: center;
+}
+.spinner {
+  width: 44px; height: 44px;
+  border: 3px solid var(--forest-lt);
+  border-top-color: var(--forest);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── APP SHELL ─── */
+#screen-app { background: var(--cream); }
+.app-header {
+  background: var(--forest);
+  color: white;
+  padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 60px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.app-header-left { display: flex; align-items: center; gap: 12px; }
+.app-header h2  { font-family: 'Lora', serif; font-size: 16px; font-weight: 700; }
+.app-header p   { font-size: 12px; opacity: 0.75; }
+.user-pill {
+  background: rgba(255,255,255,0.15);
+  border-radius: 20px; padding: 4px 14px 4px 8px;
+  font-size: 13px; display: flex; align-items: center; gap: 8px;
+}
+.user-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--amber); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600;
+}
+
+/* ─── TAB NAV ─── */
+.tab-bar {
+  background: white;
+  border-bottom: 1px solid var(--stone-lt);
+  display: flex;
+  overflow-x: auto;
+  padding: 0 24px;
+}
+.tab-btn {
+  padding: 14px 18px;
+  font-size: 14px; font-weight: 500;
+  color: var(--text-mid);
+  border: none; background: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.tab-btn:hover { color: var(--forest); }
+.tab-btn.active {
+  color: var(--forest);
+  border-bottom-color: var(--forest);
+  font-weight: 600;
+}
+.tab-content { display: none; padding: 28px 24px; max-width: 820px; margin: 0 auto; }
+.tab-content.active { display: block; }
+
+/* ─── STATUS CARDS ─── */
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.status-card {
+  background: white; border-radius: var(--radius);
+  padding: 18px; box-shadow: var(--shadow);
+  border-left: 4px solid var(--stone-lt);
+  transition: box-shadow 0.2s;
+}
+.status-card:hover { box-shadow: var(--shadow-lg); }
+.status-card.done  { border-left-color: var(--forest); }
+.status-card.warn  { border-left-color: var(--amber); }
+.status-card.lock  { border-left-color: var(--stone); }
+.status-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--stone); font-weight: 600; }
+.status-card .val   { font-size: 18px; font-weight: 700; color: var(--text); margin: 4px 0; font-family: 'Lora', serif; }
+.status-card .sub   { font-size: 12px; color: var(--text-mid); }
+
+/* ─── FORM SECTIONS ─── */
+.section-header {
+  background: white; border-radius: var(--radius);
+  padding: 22px 24px; margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  display: flex; align-items: flex-start; gap: 16px;
+}
+.section-badge {
+  background: var(--forest); color: white;
+  font-size: 13px; font-weight: 700;
+  border-radius: 8px; padding: 6px 12px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.section-header h3 { font-size: 17px; color: var(--forest); margin-bottom: 4px; }
+.section-header p  { font-size: 13px; color: var(--text-mid); }
+
+.q-block {
+  background: white; border-radius: var(--radius);
+  padding: 22px 24px; margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+.q-label {
+  font-size: 12px; font-weight: 600; color: var(--stone);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+}
+.q-text { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 14px; line-height: 1.5; }
+.q-note { font-size: 12px; color: var(--amber); font-weight: 500; margin-bottom: 12px; }
+
+textarea {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid var(--stone-lt); border-radius: 8px;
+  resize: vertical; min-height: 90px; color: var(--text);
+  background: var(--cream); transition: border-color 0.2s;
+  line-height: 1.5;
+}
+textarea:focus { outline: none; border-color: var(--forest); background: white; }
+
+/* ─── SCALE BUTTONS ─── */
+.scale-wrap { margin-top: 4px; }
+.scale-label-row {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--stone); margin-bottom: 6px;
+}
+.scale-btns { display: flex; gap: 8px; }
+.scale-btn {
+  flex: 1; padding: 10px 4px;
+  border: 1.5px solid var(--stone-lt); border-radius: 8px;
+  background: white; color: var(--text-mid);
+  font-size: 15px; font-weight: 600;
+  transition: all 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.scale-btn span { font-size: 10px; font-weight: 400; color: var(--stone); }
+.scale-btn:hover { border-color: var(--forest-md); color: var(--forest); }
+.scale-btn.selected {
+  background: var(--forest); border-color: var(--forest);
+  color: white;
+}
+.scale-btn.selected span { color: rgba(255,255,255,0.8); }
+
+/* ─── DROPDOWN ─── */
+select {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid var(--stone-lt); border-radius: 8px;
+  background: var(--cream); color: var(--text);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2357534E' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+  cursor: pointer;
+}
+select:focus { outline: none; border-color: var(--forest); }
+
+/* ─── BUTTONS ─── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 22px; border-radius: 8px;
+  font-size: 14px; font-weight: 600; border: none;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: var(--forest); color: white;
+}
+.btn-primary:hover { background: var(--forest-md); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(27,67,50,0.25); }
+.btn-amber  { background: var(--amber); color: white; }
+.btn-amber:hover  { background: #B45309; transform: translateY(-1px); }
+.btn-outline {
+  background: white; color: var(--forest);
+  border: 1.5px solid var(--forest);
+}
+.btn-outline:hover { background: var(--forest-lt); }
+.btn-danger { background: var(--red); color: white; }
+.btn-danger:hover { background: #B91C1C; }
+.btn-sm { padding: 7px 14px; font-size: 13px; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
+.save-row { display: flex; gap: 12px; align-items: center; margin-top: 22px; flex-wrap: wrap; }
+
+/* ─── ALERT BANNERS ─── */
+.alert {
+  border-radius: 8px; padding: 12px 16px;
+  font-size: 13px; margin-bottom: 16px;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.alert-success { background: var(--forest-lt); color: #065F46; }
+.alert-warn    { background: var(--amber-lt);  color: #92400E; }
+.alert-info    { background: var(--blue-lt);   color: #1E40AF; }
+.alert-error   { background: var(--red-lt);    color: var(--red); }
+.alert-icon    { flex-shrink: 0; margin-top: 1px; }
+
+/* ─── DASHBOARD ─── */
+.score-hero {
+  background: var(--forest);
+  border-radius: 14px; padding: 32px;
+  color: white; text-align: center;
+  margin-bottom: 20px;
+}
+.score-hero .big-score {
+  font-family: 'Lora', serif;
+  font-size: 64px; font-weight: 700;
+  line-height: 1; margin-bottom: 6px;
+}
+.score-hero .grade-pill {
+  display: inline-block;
+  background: rgba(255,255,255,0.2);
+  border-radius: 20px; padding: 4px 18px;
+  font-size: 16px; font-weight: 600;
+  margin-bottom: 6px;
+}
+.score-breakdown {
+  display: flex; justify-content: center; gap: 28px;
+  margin-top: 20px; flex-wrap: wrap;
+}
+.score-part { text-align: center; }
+.score-part .sp-val { font-size: 22px; font-weight: 700; font-family: 'Lora', serif; }
+.score-part .sp-lbl { font-size: 11px; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.dash-card {
+  background: white; border-radius: var(--radius);
+  padding: 20px 22px; margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.dash-card h4 { font-size: 14px; color: var(--forest); margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ─── TABLE ─── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th {
+  background: var(--forest); color: white;
+  padding: 9px 12px; text-align: left;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.data-table th:first-child { border-radius: 6px 0 0 0; }
+.data-table th:last-child  { border-radius: 0 6px 0 0; }
+.data-table td { padding: 9px 12px; border-bottom: 1px solid var(--stone-lt); vertical-align: top; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--cream); }
+
+/* ─── GRADE BADGES ─── */
+.grade-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 6px;
+  font-size: 13px; font-weight: 700; font-family: 'Lora', serif;
+}
+.grade-A { background: #D1FAE5; color: #065F46; }
+.grade-B { background: #DBEAFE; color: #1E40AF; }
+.grade-C { background: #FEF3C7; color: #92400E; }
+.grade-D { background: #FFEDD5; color: #7C2D12; }
+.grade-F { background: #FEE2E2; color: #7F1D1D; }
+
+/* ─── PROGRESS BAR ─── */
+.prog-bar { background: var(--stone-lt); border-radius: 99px; height: 6px; overflow: hidden; margin-top: 6px; }
+.prog-fill { height: 100%; border-radius: 99px; background: var(--forest); transition: width 0.6s ease; }
+
+/* ─── ADMIN ─── */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0; border-bottom: 1px solid var(--stone-lt);
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-info h4 { font-size: 15px; color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 600; }
+.toggle-info p  { font-size: 13px; color: var(--text-mid); margin-top: 2px; }
+.status-dot {
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%; margin-right: 6px;
+}
+.dot-green  { background: #059669; }
+.dot-amber  { background: var(--amber); }
+.dot-red    { background: var(--red); }
+.dot-grey   { background: var(--stone); }
+
+/* ─── PART B CARD ─── */
+.feedback-card {
+  background: var(--cream-dk); border-radius: 8px;
+  padding: 14px 16px; margin-bottom: 10px;
+  border-left: 3px solid var(--forest);
+}
+.feedback-meta { font-size: 12px; color: var(--stone); margin-bottom: 8px; }
+.feedback-scores { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.fscore { background: white; border-radius: 6px; padding: 4px 8px; font-size: 12px; }
+.fscore strong { color: var(--forest); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 600px) {
+  .app-header { padding: 0 14px; }
+  .tab-bar    { padding: 0 14px; }
+  .tab-content { padding: 20px 14px; }
+  .scale-btns  { gap: 5px; }
+  .login-card  { padding: 32px 24px; }
+  .section-header { flex-direction: column; gap: 10px; }
+}
+
+/* ─── MISC UTIL ─── */
+.mt-4  { margin-top: 4px;  }
+.mt-8  { margin-top: 8px;  }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mb-8  { margin-bottom: 8px; }
+.flex  { display: flex; }
+.gap-8 { gap: 8px; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.text-sm { font-size: 13px; }
+.text-xs { font-size: 12px; }
+.text-mid { color: var(--text-mid); }
+.font-bold { font-weight: 700; }
+.hidden { display: none !important; }
+.divider { border: none; border-top: 1px solid var(--stone-lt); margin: 18px 0; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════
+     SCREEN: LOGIN
+     ════════════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="org-logo">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+    </div>
+    <span class="year-badge" id="login-year-badge">2026 Appraisal</span>
+    <h1>Annual Staff Appraisal</h1>
+    <p>Sign in with your organisation Google account to access your appraisal.</p>
+    <p id="login-error" class="alert alert-error hidden" style="margin-bottom:0"></p>
+    <div id="g_id_onload"
+         data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+         data-callback="handleGoogleSignIn"
+         data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-theme="outline"
+         data-size="large"
+         data-text="signin_with"
+         data-width="320"
+         style="display:flex; justify-content:center;">
+    </div>
+    <p class="login-divider">— secure via Google OAuth —</p>
+    <p style="font-size:12px;color:var(--stone);">Your responses are confidential. Only your manager and the CEO see your data as specified by the appraisal policy.</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN: LOADING
+     ════════════════════════════════════ -->
+<div id="screen-loading" class="screen">
+  <div style="text-align:center">
+    <div class="spinner"></div>
+    <p id="loading-msg" style="color:var(--text-mid); font-size:14px;">Loading your appraisal…</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN: APP (Main Portal)
+     ════════════════════════════════════ -->
+<div id="screen-app" class="screen">
+
+  <!-- App Header -->
+  <div class="app-header">
+    <div class="app-header-left">
+      <div>
+        <h2>Annual Appraisal</h2>
+        <p id="header-subtitle">Staff Portal</p>
+      </div>
+    </div>
+    <div class="user-pill">
+      <div class="user-avatar" id="user-avatar">–</div>
+      <span id="user-name-header">Loading…</span>
+    </div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar" id="tab-bar">
+    <button class="tab-btn active" data-tab="home" onclick="switchTab('home')">🏠 Home</button>
+    <button class="tab-btn" data-tab="parta" onclick="switchTab('parta')">Part A</button>
+    <button class="tab-btn" data-tab="partb" onclick="switchTab('partb')">Part B</button>
+    <button class="tab-btn hidden" id="tab-partc-btn" data-tab="partc" onclick="switchTab('partc')">Part C</button>
+    <button class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="tab-btn hidden" id="tab-admin-btn" data-tab="admin" onclick="switchTab('admin')">⚙️ Admin</button>
+  </div>
+
+  <!-- ── TAB: HOME ── -->
+  <div class="tab-content active" id="tab-home">
+    <div id="cycle-locked-banner" class="alert alert-warn hidden">
+      🔒 <strong>Appraisal cycle is locked.</strong> All submissions are now read-only. Contact the CEO to reopen.
+    </div>
+    <div id="cycle-info-banner" class="alert alert-info hidden" style="margin-bottom:20px">
+      ℹ️ <strong>Cycle open.</strong> You can edit your responses at any time until the CEO locks the cycle.
+    </div>
+
+    <h3 style="font-size:20px; color:var(--forest); margin-bottom:6px" id="home-greeting">Welcome</h3>
+    <p class="text-mid text-sm mb-8">Here's the status of your <strong id="home-cycle-year">2026</strong> appraisal.</p>
+
+    <div class="status-grid" id="status-grid">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="dash-card" id="manager-home-section" style="display:none">
+      <h4>Your Team — Part C Status</h4>
+      <div id="team-partc-status"></div>
+    </div>
+
+    <p class="text-sm text-mid" style="margin-top:16px">Click a tab above to fill in or review your responses.</p>
+  </div>
+
+  <!-- ── TAB: PART A ── -->
+  <div class="tab-content" id="tab-parta">
+    <div class="section-header">
+      <div class="section-badge">Part A</div>
+      <div>
+        <h3>Self-Evaluation</h3>
+        <p>8 reflection questions + a 1–5 rating each. Contributes 50 points to your final score.</p>
+      </div>
+    </div>
+    <div id="parta-locked-msg" class="alert alert-warn hidden">🔒 Cycle locked. Responses are read-only.</div>
+    <div id="parta-saved-msg"  class="alert alert-success hidden">✅ Part A saved successfully.</div>
+    <div id="parta-error-msg"  class="alert alert-error hidden"></div>
+
+    <!-- Q A1 -->
+    <div class="q-block">
+      <div class="q-label">A1 — Overall Year</div>
+      <div class="q-text">In a few sentences, describe how the last 12 months have been for you.</div>
+      <textarea id="A1a" placeholder="Reflect on your year…" rows="3"></textarea>
+      <div style="height:14px"></div>
+      <div class="q-text">Overall, how satisfied are you with your work experience in the last 12 months?</div>
+      <div class="scale-wrap" id="scale-A1b"></div>
+    </div>
+
+    <!-- Q A2 -->
+    <div class="q-block">
+      <div class="q-label">A2 — Contribution</div>
+      <div class="q-text">What do you consider your most important contributions to our work this year?</div>
+      <textarea id="A2a" placeholder="Describe your key contributions…" rows="3"></textarea>
+      <div style="height:14px"></div>
+      <div class="q-text">How would you rate your overall contribution to beneficiary wellbeing?</div>
+      <div class="scale-wrap" id="scale-A2b"></div>
+    </div>
+
+    <!-- Q A3 -->
+    <div class="q-block">
+      <div class="q-label">A3 — Challenges</div>
+      <div class="q-text">What elements of your role have you found most challenging?</div>
+      <textarea id="A3a" placeholder="Describe the challenges you faced…" rows="3"></textarea>
+      <div style="height:14px"></div>
+      <div class="q-text">To what extent did these challenges reduce your effectiveness?</div>
+      <p class="q-note">⚠ This scale is inverted: 1 = Not at all (higher score) · 5 = A lot (lower score)</p>
+      <div class="scale-wrap" id="scale-A3b"></div>
+    </div>
+
+    <!-- Q A4 -->
+    <div class="q-block">
+      <div class="q-label">A4 — Support &amp; Development</div>
+      <div class="q-text">What support, training, or resources would help you serve better?</div>
+      <textarea id="A4a" placeholder="Describe the support you need…" rows="3"></textarea>
+      <div style="height:14px"></div>
+      <div class="q-text">How much do you currently receive the support you need?</div>
+      <div class="scale-wrap" id="scale-A4b"></div>
+    </div>
+
+    <!-- Q A5 -->
+    <div class="q-block">
+      <div class="q-label">A5 — Barriers &amp; Improvement</div>
+      <div class="q-text">Name one main reason limiting your progress. How could this become an opportunity?</div>
+      <textarea id="A5a" placeholder="One limitation, and how you'd turn it around…" rows="3"></textarea>
+      <div style="height:14px"></div>
+      <div class="q-text">How confident are you that this limitation can be improved?</div>
+      <div class="scale-wrap" id="scale-A5b"></div>
+    </div>
+
+    <!-- Q A6 -->
+    <div class="q-block">
+      <div class="q-label">A6 — Role Fit &amp; Strengths</div>
+      <div class="q-text">How does your role fit with your strengths and long-term aspirations?</div>
+      <textarea id="A6a" placeholder="Describe how your role aligns with who you are…" rows="3"></textarea>
+      <div style="height:14px"></div>
+      <div class="q-text">How well does your role use your strengths?</div>
+      <div class="scale-wrap" id="scale-A6b"></div>
+    </div>
+
+    <!-- Q A7 -->
+    <div class="q-block">
+      <div class="q-label">A7 — Focus for Next Year</div>
+      <div class="q-text">What activities would you most like to focus on next year to increase impact?</div>
+      <textarea id="A7a" placeholder="Your priorities for the year ahead…" rows="3"></textarea>
+      <div style="height:14px"></div>
+      <div class="q-text">How clear are you about your priorities for next year?</div>
+      <div class="scale-wrap" id="scale-A7b"></div>
+    </div>
+
+    <!-- Q A8 -->
+    <div class="q-block">
+      <div class="q-label">A8 — Habits &amp; Growth</div>
+      <div class="q-text">Based on who you want to become, what habit do you need to start — and stop?</div>
+      <textarea id="A8a" placeholder="Start: … | Stop: …" rows="3"></textarea>
+      <div style="height:14px"></div>
+      <div class="q-text">How committed are you to making these changes?</div>
+      <div class="scale-wrap" id="scale-A8b"></div>
+    </div>
+
+    <div class="save-row">
+      <button class="btn btn-primary" id="save-parta-btn" onclick="savePartA()">💾 Save Part A</button>
+      <span id="parta-save-status" class="text-sm text-mid"></span>
+    </div>
+  </div>
+
+  <!-- ── TAB: PART B ── -->
+  <div class="tab-content" id="tab-partb">
+    <div class="section-header">
+      <div class="section-badge">Part B</div>
+      <div>
+        <h3>Upward Feedback</h3>
+        <p>Rate your manager on 7 dimensions + one open comment. Contributes 25 points to your final score.<br>
+           Evaluating: <strong id="partb-manager-name">—</strong></p>
+      </div>
+    </div>
+
+    <div id="partb-no-manager" class="alert alert-warn hidden">
+      ⚠ No manager is assigned to your profile. Please contact the admin.
+    </div>
+    <div id="partb-locked-msg" class="alert alert-warn hidden">🔒 Cycle locked. Responses are read-only.</div>
+    <div id="partb-saved-msg"  class="alert alert-success hidden">✅ Part B saved successfully.</div>
+    <div id="partb-error-msg"  class="alert alert-error hidden"></div>
+
+    <!-- Scale questions B1–B7 -->
+    <div id="partb-questions">
+      <!-- rendered by JS -->
+    </div>
+
+    <!-- B8a text -->
+    <div class="q-block">
+      <div class="q-label">B8 — Open Feedback</div>
+      <div class="q-text">What is one thing your manager does well that should continue — and one thing they should improve?</div>
+      <textarea id="B8a" placeholder="Continue: … | Improve: …" rows="3"></textarea>
+      <div style="height:14px"></div>
+      <div class="q-text">Overall, how satisfied are you with your manager's leadership and support?</div>
+      <div class="scale-wrap" id="scale-B8b"></div>
+    </div>
+
+    <div class="save-row">
+      <button class="btn btn-primary" id="save-partb-btn" onclick="savePartB()">💾 Save Part B</button>
+      <span id="partb-save-status" class="text-sm text-mid"></span>
+    </div>
+  </div>
+
+  <!-- ── TAB: PART C ── -->
+  <div class="tab-content hidden" id="tab-partc">
+    <div class="section-header">
+      <div class="section-badge">Part C</div>
+      <div>
+        <h3>Team Evaluation</h3>
+        <p>Evaluate each of your direct reports on 4 dimensions. Each evaluation contributes 25 points to the employee's final score.</p>
+      </div>
+    </div>
+
+    <div id="partc-locked-msg" class="alert alert-warn hidden">🔒 Cycle locked. Responses are read-only.</div>
+    <div id="partc-saved-msg"  class="alert alert-success hidden">✅ Part C saved successfully.</div>
+    <div id="partc-error-msg"  class="alert alert-error hidden"></div>
+
+    <div class="q-block">
+      <div class="q-label">Select Employee</div>
+      <div class="q-text">Choose a direct report to evaluate:</div>
+      <select id="partc-employee-select" onchange="loadPartCForEmployee()">
+        <option value="">— Select an employee —</option>
+      </select>
+    </div>
+
+    <div id="partc-form" class="hidden">
+      <!-- C1 -->
+      <div class="q-block">
+        <div class="q-label">C1 — Execution</div>
+        <div class="q-text">This employee executes their role clearly and delivers on commitments.</div>
+        <div class="scale-wrap" id="scale-C1"></div>
+      </div>
+      <!-- C2 -->
+      <div class="q-block">
+        <div class="q-label">C2 — Initiative</div>
+        <div class="q-text">This employee takes initiative and solves problems proactively.</div>
+        <div class="scale-wrap" id="scale-C2"></div>
+      </div>
+      <!-- C3 -->
+      <div class="q-block">
+        <div class="q-label">C3 — Collaboration</div>
+        <div class="q-text">This employee collaborates effectively with the team and contributes to team culture.</div>
+        <div class="scale-wrap" id="scale-C3"></div>
+      </div>
+      <!-- C4 -->
+      <div class="q-block">
+        <div class="q-label">C4 — Growth Mindset</div>
+        <div class="q-text">This employee demonstrates growth and willingness to learn and develop.</div>
+        <div class="scale-wrap" id="scale-C4"></div>
+      </div>
+
+      <div class="save-row">
+        <button class="btn btn-primary" id="save-partc-btn" onclick="savePartC()">💾 Save Evaluation</button>
+        <span id="partc-save-status" class="text-sm text-mid"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: DASHBOARD ── -->
+  <div class="tab-content" id="tab-dashboard">
+    <!-- Personal dashboard (all) -->
+    <div id="personal-dash">
+      <div class="score-hero" id="dash-hero">
+        <div class="big-score" id="dash-final-score">—</div>
+        <div class="grade-pill" id="dash-grade-pill">—</div>
+        <p id="dash-grade-label" style="opacity:0.85; font-size:14px; margin-top:4px">—</p>
+        <div class="score-breakdown">
+          <div class="score-part"><div class="sp-val" id="dash-score-a">—</div><div class="sp-lbl">Part A<br><span style="font-size:10px;opacity:0.7">/ 50</span></div></div>
+          <div class="score-part"><div class="sp-val" id="dash-score-b">—</div><div class="sp-lbl">Part B<br><span style="font-size:10px;opacity:0.7">/ 25</span></div></div>
+          <div class="score-part"><div class="sp-val" id="dash-score-c">—</div><div class="sp-lbl">Part C<br><span style="font-size:10px;opacity:0.7">/ 25</span></div></div>
+        </div>
+      </div>
+
+      <div class="dash-card" id="dash-partc-box">
+        <h4>Manager's Evaluation (Part C)</h4>
+        <div id="dash-partc-content">Checking…</div>
+      </div>
+
+      <div class="dash-card">
+        <h4>Raise &amp; Development Guidance</h4>
+        <div id="dash-guidance">—</div>
+      </div>
+    </div>
+
+    <!-- CEO Dashboard (injected here) -->
+    <div id="ceo-dash" class="hidden">
+      <div class="flex justify-between items-center" style="margin-bottom:18px">
+        <h3 style="font-size:18px; color:var(--forest)">CEO Dashboard</h3>
+        <button class="btn btn-sm btn-outline" onclick="loadCEODashboard()">↺ Refresh</button>
+      </div>
+
+      <div class="dash-card">
+        <h4>Org Scorecard</h4>
+        <div id="ceo-org-table" style="overflow-x:auto"></div>
+      </div>
+
+      <div class="dash-card">
+        <h4>Manager Effectiveness</h4>
+        <div id="ceo-manager-table" style="overflow-x:auto"></div>
+      </div>
+
+      <div class="dash-card">
+        <h4>Part B — Full Transparency</h4>
+        <p class="text-xs text-mid mb-8">All upward feedback with names visible to CEO only.</p>
+        <div id="ceo-partb-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: ADMIN (CEO ONLY) ── -->
+  <div class="tab-content hidden" id="tab-admin">
+    <h3 style="font-size:18px; color:var(--forest); margin-bottom:18px">Admin Panel</h3>
+
+    <!-- Cycle Controls -->
+    <div class="dash-card">
+      <h4>Appraisal Cycle</h4>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Cycle Status</h4>
+          <p id="admin-cycle-status-label">—</p>
+        </div>
+        <div style="display:flex; gap:8px">
+          <button class="btn btn-sm btn-danger" id="admin-lock-btn" onclick="adminLockCycle()">🔒 Lock Cycle</button>
+          <button class="btn btn-sm btn-outline hidden" id="admin-unlock-btn" onclick="adminUnlockCycle()">🔓 Unlock</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Part C Release -->
+    <div class="dash-card">
+      <h4>Part C Feedback Release</h4>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <h4>Release Status</h4>
+          <p id="admin-partc-release-label">—</p>
+        </div>
+        <div style="display:flex; gap:8px">
+          <button class="btn btn-sm btn-primary hidden" id="admin-release-btn" onclick="adminReleasePartC(true)">📢 Release to Staff</button>
+          <button class="btn btn-sm btn-outline hidden" id="admin-retract-btn" onclick="adminReleasePartC(false)">↺ Retract</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question Config -->
+    <div class="dash-card">
+      <h4>Questions Configuration</h4>
+      <p class="text-sm text-mid mb-8">Edit question text and weights. Weights per section must sum to 100%.</p>
+      <div id="admin-questions-table" style="overflow-x:auto"></div>
+    </div>
+
+    <!-- Audit Log -->
+    <div class="dash-card">
+      <h4>Audit Log</h4>
+      <button class="btn btn-sm btn-outline mb-8" onclick="loadAuditLog()">Load Audit Log</button>
+      <div id="admin-audit-table" style="overflow-x:auto;max-height:400px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+</div><!-- /screen-app -->
+
+<!-- ════════════════════════════════════
+     JAVASCRIPT
+     ════════════════════════════════════ -->
+<script>
+// ─── CONFIGURATION ───────────────────────────────────────────
+const GAS_URL     = 'YOUR_GAS_WEB_APP_URL_HERE';
+// The Google Client ID is set in the data-client_id attribute above
+
+// ─── STATE ───────────────────────────────────────────────────
+let APP = {
+  user:        null,
+  token:       null,
+  myData:      null,
+  questions:   null,
+  cycleStatus: null,
+  partCStatus: null,
+  cycleLocked: false,
+  directReports: []
+};
+
+// Stores selected scale values: { A1b: 3, A2b: 4, ... }
+const SCALES = {};
+
+// ─── SCREENS ─────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+// ─── GOOGLE SIGN-IN ──────────────────────────────────────────
+async function handleGoogleSignIn(response) {
+  APP.token = response.credential;
+  showScreen('loading');
+  setLoading('Verifying your account…');
+
+  try {
+    const user = await callGAS('getUser', {});
+    if (!user || !user.email) {
+      showError('Your email is not registered in the appraisal system. Please contact the admin.');
+      showScreen('login');
+      return;
+    }
+    APP.user = user;
+    await initApp();
+  } catch (e) {
+    showError('Login failed: ' + e.message);
+    showScreen('login');
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+// ─── INIT APP ────────────────────────────────────────────────
+async function initApp() {
+  setLoading('Loading appraisal data…');
+
+  // Fetch all base data in parallel
+  const [myData, cycleStatus, partCStatus, questions] = await Promise.all([
+    callGAS('getMyData', {}),
+    callGAS('getCycleStatus', {}),
+    callGAS('getPartCStatus', {}),
+    callGAS('getQuestions', {})
+  ]);
+
+  APP.myData      = myData;
+  APP.cycleStatus = cycleStatus;
+  APP.partCStatus = partCStatus;
+  APP.questions   = questions;
+  APP.cycleLocked = cycleStatus.locked;
+
+  // Header
+  document.getElementById('user-name-header').textContent = APP.user.name;
+  document.getElementById('user-avatar').textContent = APP.user.name.charAt(0).toUpperCase();
+  document.getElementById('header-subtitle').textContent = APP.user.role + ' · ' + (APP.user.team || 'Staff');
+  document.getElementById('login-year-badge').textContent = cycleStatus.cycleYear + ' Appraisal';
+
+  // Show manager/CEO-only tabs
+  if (APP.user.role === 'Manager' || APP.user.role === 'CEO') {
+    document.getElementById('tab-partc-btn').classList.remove('hidden');
+    document.getElementById('tab-partc').classList.remove('hidden');
+  }
+  if (APP.user.role === 'CEO') {
+    document.getElementById('tab-admin-btn').classList.remove('hidden');
+    document.getElementById('tab-admin').classList.remove('hidden');
+  }
+
+  renderHome();
+  renderPartAForm();
+  renderPartBForm();
+  if (APP.user.role === 'Manager' || APP.user.role === 'CEO') {
+    renderPartCForm();
+  }
+  renderDashboard();
+  if (APP.user.role === 'CEO') {
+    renderAdminPanel();
+  }
+
+  showScreen('app');
+}
+
+function setLoading(msg) {
+  document.getElementById('loading-msg').textContent = msg;
+}
+
+// ─── TAB SWITCHING ───────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const btn = document.querySelector(`[data-tab="${name}"]`);
+  if (btn) btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+
+  if (name === 'dashboard' && APP.user.role === 'CEO') loadCEODashboard();
+  if (name === 'admin') refreshAdminStatus();
+}
+
+// ─── HOME TAB ────────────────────────────────────────────────
+function renderHome() {
+  const d = APP.myData;
+  const locked = APP.cycleLocked;
+
+  document.getElementById('home-greeting').textContent = 'Welcome, ' + APP.user.name;
+  document.getElementById('home-cycle-year').textContent = APP.cycleStatus.cycleYear;
+
+  if (locked) {
+    document.getElementById('cycle-locked-banner').classList.remove('hidden');
+  } else {
+    document.getElementById('cycle-info-banner').classList.remove('hidden');
+  }
+
+  // Status cards
+  const grid = document.getElementById('status-grid');
+  const partADone = d.partA && d.partA.submitted;
+  const partBDone = d.partB && d.partB.submitted;
+  const partCReleased = APP.partCStatus.released;
+
+  let cards = '';
+  cards += statusCard('Part A', 'Self-Evaluation',
+    partADone ? `${d.partA.score}/50 pts` : 'Not submitted',
+    partADone ? 'done' : 'warn',
+    partADone ? (d.partA.lastUpdated ? 'Updated ' + d.partA.lastUpdated : '✓ Submitted') : 'Tap "Part A" tab to begin'
+  );
+
+  if (APP.user.managerEmail) {
+    cards += statusCard('Part B', 'Upward Feedback',
+      partBDone ? `${d.partB.score}/25 pts` : 'Not submitted',
+      partBDone ? 'done' : 'warn',
+      partBDone ? (d.partB.lastUpdated ? 'Updated ' + d.partB.lastUpdated : '✓ Submitted') : 'Tap "Part B" tab to begin'
+    );
+  }
+
+  const hasCFeedback = d.partC && d.partC.available;
+  cards += statusCard('Part C', "Manager's Evaluation",
+    hasCFeedback ? `${d.partC.score}/25 pts` : (partCReleased ? 'Not evaluated yet' : 'Pending release'),
+    hasCFeedback ? 'done' : 'lock',
+    hasCFeedback ? 'View in Dashboard tab' : (partCReleased ? 'Your manager has not submitted yet' : 'CEO has not released yet')
+  );
+
+  const total = Math.min((partADone ? d.partA.score : 0) + (partBDone ? d.partB.score : 0) + (hasCFeedback ? d.partC.score : 0), 100);
+  const bucket = assignBucketFE(total);
+  cards += statusCard('Current Score', 'All Parts Combined',
+    total + '/100',
+    'done',
+    'Grade ' + bucket.grade + ' — ' + bucket.label
+  );
+
+  grid.innerHTML = cards;
+
+  // Manager: show team Part C status
+  if (APP.user.role === 'Manager' || APP.user.role === 'CEO') {
+    document.getElementById('manager-home-section').style.display = 'block';
+    const reports = APP.myData.directReports || [];
+    const submitted = APP.myData.partCSubmitted || [];
+    const submittedEmails = submitted.map(x => x.employeeEmail.toLowerCase());
+    let html = '';
+    if (reports.length === 0) {
+      html = '<p class="text-sm text-mid">No direct reports found.</p>';
+    } else {
+      html = '<table class="data-table"><thead><tr><th>Name</th><th>Team</th><th>Part C</th><th>Score</th></tr></thead><tbody>';
+      for (const r of reports) {
+        const done = submittedEmails.includes(r.email.toLowerCase());
+        const sub  = submitted.find(x => x.employeeEmail.toLowerCase() === r.email.toLowerCase());
+        html += `<tr>
+          <td><strong>${r.name}</strong></td>
+          <td class="text-mid">${r.team}</td>
+          <td>${done ? '✅ Submitted' : '<span style="color:var(--amber)">⏳ Pending</span>'}</td>
+          <td>${done && sub ? sub.totalScore + '/25' : '—'}</td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+    }
+    document.getElementById('team-partc-status').innerHTML = html;
+  }
+}
+
+function statusCard(title, sub, val, cls, note) {
+  return `<div class="status-card ${cls}">
+    <div class="label">${title}</div>
+    <div class="val">${val}</div>
+    <div class="sub">${sub}</div>
+    <div class="sub mt-4">${note}</div>
+  </div>`;
+}
+
+// ─── PART A FORM ─────────────────────────────────────────────
+const SCALE_LABELS = {
+  normal: ['1<br><span>Low</span>','2<br><span></span>','3<br><span>Mid</span>','4<br><span></span>','5<br><span>High</span>'],
+  inv:    ['1<br><span>Good</span>','2<br><span></span>','3<br><span>Mid</span>','4<br><span></span>','5<br><span>Bad</span>']
+};
+
+function renderScaleWidget(containerId, key, inverted) {
+  const labels = inverted ? SCALE_LABELS.inv : SCALE_LABELS.normal;
+  let html = '<div class="scale-btns">';
+  for (let i = 1; i <= 5; i++) {
+    html += `<button type="button" class="scale-btn" id="scale-${key}-${i}" onclick="selectScale('${key}', ${i})">
+      ${labels[i-1]}
+    </button>`;
+  }
+  html += '</div>';
+  document.getElementById(containerId).innerHTML = html;
+}
+
+function selectScale(key, val) {
+  SCALES[key] = val;
+  for (let i = 1; i <= 5; i++) {
+    const btn = document.getElementById(`scale-${key}-${i}`);
+    if (btn) btn.classList.toggle('selected', i === val);
+  }
+}
+
+function setScaleValue(key, val) {
+  if (!val) return;
+  selectScale(key, parseInt(val));
+}
+
+function disableScales(keys) {
+  for (const k of keys) {
+    for (let i = 1; i <= 5; i++) {
+      const btn = document.getElementById(`scale-${k}-${i}`);
+      if (btn) { btn.disabled = true; btn.style.cursor = 'default'; }
+    }
+  }
+}
+
+function renderPartAForm() {
+  const scaleKeys = ['A1b','A2b','A3b','A4b','A5b','A6b','A7b','A8b'];
+  scaleKeys.forEach((k,i) => renderScaleWidget('scale-' + k, k, k === 'A3b'));
+
+  const d = APP.myData;
+  if (d.partA && d.partA.submitted) {
+    const data = d.partA.data;
+    ['A1a','A2a','A3a','A4a','A5a','A6a','A7a','A8a'].forEach(k => {
+      if (document.getElementById(k)) document.getElementById(k).value = data[k] || '';
+    });
+    scaleKeys.forEach(k => setScaleValue(k, data[k]));
+  }
+
+  if (APP.cycleLocked) {
+    document.getElementById('parta-locked-msg').classList.remove('hidden');
+    document.getElementById('save-parta-btn').disabled = true;
+    ['A1a','A2a','A3a','A4a','A5a','A6a','A7a','A8a'].forEach(k => {
+      const el = document.getElementById(k);
+      if (el) el.disabled = true;
+    });
+    disableScales(scaleKeys);
+  }
+}
+
+async function savePartA() {
+  const btn = document.getElementById('save-parta-btn');
+  const status = document.getElementById('parta-save-status');
+  hideMsgs('parta');
+
+  const data = {};
+  ['A1a','A2a','A3a','A4a','A5a','A6a','A7a','A8a'].forEach(k => {
+    const el = document.getElementById(k);
+    data[k] = el ? el.value.trim() : '';
+  });
+  ['A1b','A2b','A3b','A4b','A5b','A6b','A7b','A8b'].forEach(k => {
+    data[k] = SCALES[k] || 0;
+  });
+
+  // Validation
+  const textKeys = ['A1a','A2a','A3a','A4a','A5a','A6a','A7a','A8a'];
+  for (const k of textKeys) {
+    if (!data[k]) { showMsg('parta-error-msg', 'Please complete all text fields (including ' + k + ').'); return; }
+  }
+  const scaleKeys = ['A1b','A2b','A3b','A4b','A5b','A6b','A7b','A8b'];
+  for (const k of scaleKeys) {
+    if (!data[k]) { showMsg('parta-error-msg', 'Please select a rating for ' + k + '.'); return; }
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const res = await callGAS('submitPartA', data);
+    if (res.success) {
+      showMsg('parta-saved-msg', '✅ Part A saved. Score: ' + res.score + '/50');
+      APP.myData.partA = { submitted: true, score: res.score, data };
+      status.textContent = 'Last saved: just now';
+      renderHome();
+      renderDashboard();
+    } else {
+      showMsg('parta-error-msg', res.error || 'Save failed.');
+    }
+  } catch (e) {
+    showMsg('parta-error-msg', 'Network error: ' + e.message);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '💾 Save Part A';
+}
+
+// ─── PART B FORM ─────────────────────────────────────────────
+const B_QUESTIONS = [
+  ['B1','Clarity',         'My manager explains my role and expectations clearly so I know what good performance looks like.'],
+  ['B2','Communication',   'My manager keeps me informed about important decisions and changes that affect my work.'],
+  ['B3','Approachability', 'When I face difficulties, my manager is approachable and helps me find solutions.'],
+  ['B4','Feedback',        'My manager gives me timely and constructive feedback and recognizes my efforts fairly.'],
+  ['B5','Fairness',        'My manager treats me and colleagues with fairness and respect, without favoritism.'],
+  ['B6','Development',     'My manager encourages my learning and development and discusses how I can grow in my role.'],
+  ['B7','Team Environment','My manager helps create a positive, safe and supportive work environment in our team.']
+];
+
+function renderPartBForm() {
+  if (!APP.user.managerEmail) {
+    document.getElementById('partb-no-manager').classList.remove('hidden');
+    document.getElementById('save-partb-btn').disabled = true;
+    return;
+  }
+
+  // Show manager name (we'll look it up from hierarchy if possible)
+  document.getElementById('partb-manager-name').textContent = APP.user.managerEmail;
+
+  // Render B1–B7 questions
+  let html = '';
+  for (const [key, label, text] of B_QUESTIONS) {
+    html += `<div class="q-block">
+      <div class="q-label">${key} — ${label}</div>
+      <div class="q-text">${text}</div>
+      <div class="scale-wrap" id="scale-${key}"></div>
+    </div>`;
+  }
+  document.getElementById('partb-questions').innerHTML = html;
+
+  // Render B8b scale
+  renderScaleWidget('scale-B8b', 'B8b', false);
+
+  // Render B1–B7 scales after HTML is set
+  for (const [key] of B_QUESTIONS) {
+    renderScaleWidget('scale-' + key, key, false);
+  }
+
+  // Pre-populate if existing
+  const d = APP.myData;
+  if (d.partB && d.partB.submitted) {
+    const data = d.partB.data;
+    if (document.getElementById('B8a')) document.getElementById('B8a').value = data.B8a || '';
+    for (const [key] of B_QUESTIONS) setScaleValue(key, data[key]);
+    setScaleValue('B8b', data.B8b);
+  }
+
+  if (APP.cycleLocked) {
+    document.getElementById('partb-locked-msg').classList.remove('hidden');
+    document.getElementById('save-partb-btn').disabled = true;
+    const allKeys = [...B_QUESTIONS.map(q => q[0]), 'B8b'];
+    disableScales(allKeys);
+    const el = document.getElementById('B8a');
+    if (el) el.disabled = true;
+  }
+}
+
+async function savePartB() {
+  const btn = document.getElementById('save-partb-btn');
+  hideMsgs('partb');
+
+  const data = { B8a: document.getElementById('B8a').value.trim() };
+  for (const [key] of B_QUESTIONS) data[key] = SCALES[key] || 0;
+  data.B8b = SCALES['B8b'] || 0;
+
+  for (const [key] of B_QUESTIONS) {
+    if (!data[key]) { showMsg('partb-error-msg', 'Please rate all questions including ' + key + '.'); return; }
+  }
+  if (!data.B8b) { showMsg('partb-error-msg', 'Please rate B8b (Overall satisfaction).'); return; }
+
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    const res = await callGAS('submitPartB', data);
+    if (res.success) {
+      showMsg('partb-saved-msg', '✅ Part B saved. Score: ' + res.score + '/25');
+      APP.myData.partB = { submitted: true, score: res.score, data };
+      document.getElementById('partb-save-status').textContent = 'Last saved: just now';
+      renderHome();
+      renderDashboard();
+    } else {
+      showMsg('partb-error-msg', res.error || 'Save failed.');
+    }
+  } catch (e) {
+    showMsg('partb-error-msg', 'Network error: ' + e.message);
+  }
+
+  btn.disabled = false; btn.textContent = '💾 Save Part B';
+}
+
+// ─── PART C FORM ─────────────────────────────────────────────
+function renderPartCForm() {
+  const reports = APP.myData.directReports || [];
+  const select = document.getElementById('partc-employee-select');
+  select.innerHTML = '<option value="">— Select an employee —</option>';
+  for (const r of reports) {
+    select.innerHTML += `<option value="${r.email}">${r.name} (${r.team})</option>`;
+  }
+  APP.directReports = reports;
+
+  // Render scale widgets
+  ['C1','C2','C3','C4'].forEach(k => renderScaleWidget('scale-' + k, k, false));
+}
+
+function loadPartCForEmployee() {
+  const email = document.getElementById('partc-employee-select').value;
+  if (!email) { document.getElementById('partc-form').classList.add('hidden'); return; }
+
+  document.getElementById('partc-form').classList.remove('hidden');
+
+  // Clear scales
+  ['C1','C2','C3','C4'].forEach(k => {
+    SCALES[k] = 0;
+    for (let i = 1; i <= 5; i++) {
+      const btn = document.getElementById(`scale-${k}-${i}`);
+      if (btn) { btn.classList.remove('selected'); btn.disabled = APP.cycleLocked; }
+    }
+  });
+
+  // Pre-fill if already evaluated
+  const existing = (APP.myData.partCSubmitted || []).find(x => x.employeeEmail.toLowerCase() === email.toLowerCase());
+  if (existing) {
+    setScaleValue('C1', existing.scores.C1);
+    setScaleValue('C2', existing.scores.C2);
+    setScaleValue('C3', existing.scores.C3);
+    setScaleValue('C4', existing.scores.C4);
+  }
+
+  if (APP.cycleLocked) {
+    document.getElementById('partc-locked-msg').classList.remove('hidden');
+    document.getElementById('save-partc-btn').disabled = true;
+  }
+}
+
+async function savePartC() {
+  const btn = document.getElementById('save-partc-btn');
+  hideMsgs('partc');
+
+  const email = document.getElementById('partc-employee-select').value;
+  if (!email) { showMsg('partc-error-msg', 'Please select an employee first.'); return; }
+
+  const data = { employeeEmail: email };
+  for (const k of ['C1','C2','C3','C4']) {
+    data[k] = SCALES[k] || 0;
+    if (!data[k]) { showMsg('partc-error-msg', 'Please rate all four dimensions including ' + k + '.'); return; }
+  }
+
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    const res = await callGAS('submitPartC', data);
+    if (res.success) {
+      showMsg('partc-saved-msg', '✅ Evaluation saved. Score: ' + res.score + '/25');
+      // Update local state
+      const idx = (APP.myData.partCSubmitted || []).findIndex(x => x.employeeEmail.toLowerCase() === email.toLowerCase());
+      const entry = { employeeEmail: email, employeeName: email, scores: { C1: data.C1, C2: data.C2, C3: data.C3, C4: data.C4 }, totalScore: res.score };
+      if (!APP.myData.partCSubmitted) APP.myData.partCSubmitted = [];
+      if (idx >= 0) APP.myData.partCSubmitted[idx] = entry; else APP.myData.partCSubmitted.push(entry);
+      document.getElementById('partc-save-status').textContent = 'Last saved: just now';
+      renderHome();
+    } else {
+      showMsg('partc-error-msg', res.error || 'Save failed.');
+    }
+  } catch (e) {
+    showMsg('partc-error-msg', 'Network error: ' + e.message);
+  }
+
+  btn.disabled = false; btn.textContent = '💾 Save Evaluation';
+}
+
+// ─── DASHBOARD ───────────────────────────────────────────────
+function renderDashboard() {
+  const d = APP.myData;
+  const sa = d.partA && d.partA.submitted ? d.partA.score : 0;
+  const sb = d.partB && d.partB.submitted ? d.partB.score : 0;
+  const sc = (d.partC && d.partC.available) ? d.partC.score : 0;
+  const total = Math.min(sa + sb + sc, 100);
+  const bucket = assignBucketFE(total);
+
+  document.getElementById('dash-final-score').textContent = total;
+  document.getElementById('dash-grade-pill').textContent  = 'Grade ' + bucket.grade;
+  document.getElementById('dash-grade-label').textContent = bucket.label;
+  document.getElementById('dash-score-a').textContent     = sa;
+  document.getElementById('dash-score-b').textContent     = sb;
+  document.getElementById('dash-score-c').textContent     = sc;
+
+  // Part C section
+  const partCBox = document.getElementById('dash-partc-content');
+  if (d.partC && d.partC.available) {
+    const scores = d.partC.data;
+    partCBox.innerHTML = `
+      <p class="text-sm text-mid mb-8">Evaluated by: <strong>${d.partC.managerName}</strong> &nbsp;|&nbsp; Total: <strong>${d.partC.score}/25</strong></p>
+      <div class="feedback-scores">
+        ${['C1','C2','C3','C4'].map((k,i) => `<span class="fscore">${['Execution','Initiative','Collaboration','Growth'][i]}: <strong>${scores[k]}/5</strong></span>`).join('')}
+      </div>
+    `;
+  } else if (APP.partCStatus && APP.partCStatus.released) {
+    partCBox.innerHTML = '<p class="text-sm text-mid">Your manager has not submitted your evaluation yet.</p>';
+  } else {
+    partCBox.innerHTML = '<p class="text-sm text-mid">⏳ Part C is not yet released by the CEO. Check back soon.</p>';
+  }
+
+  // Guidance
+  document.getElementById('dash-guidance').innerHTML = `
+    <div style="display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap">
+      <div class="grade-badge grade-${bucket.grade}" style="width:44px;height:44px;font-size:22px">${bucket.grade}</div>
+      <div>
+        <p><strong>Raise guidance:</strong> ${bucket.raise}</p>
+        <p class="text-sm text-mid mt-4"><strong>Development:</strong> ${bucket.action}</p>
+      </div>
+    </div>
+  `;
+
+  // CEO dashboard tab
+  if (APP.user.role === 'CEO') {
+    document.getElementById('ceo-dash').classList.remove('hidden');
+  }
+}
+
+async function loadCEODashboard() {
+  const res = await callGAS('getCEODashboard', {});
+  if (!res.success) return;
+
+  // Org scorecard
+  let html = '<table class="data-table"><thead><tr><th>Name</th><th>Team</th><th>Role</th><th>A/50</th><th>B/25</th><th>C/25</th><th>Final</th><th>Grade</th></tr></thead><tbody>';
+  for (const emp of res.orgScorecard) {
+    const g = emp.bucket ? emp.bucket.grade : '?';
+    html += `<tr>
+      <td><strong>${emp.name}</strong></td>
+      <td class="text-mid">${emp.team}</td>
+      <td class="text-mid">${emp.role}</td>
+      <td>${emp.scoreA}</td>
+      <td>${emp.scoreB}</td>
+      <td>${emp.scoreC}</td>
+      <td><strong>${emp.finalScore}</strong></td>
+      <td><span class="grade-badge grade-${g}">${g}</span></td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('ceo-org-table').innerHTML = html;
+
+  // Manager effectiveness
+  html = '<table class="data-table"><thead><tr><th>Manager</th><th>Respondents</th><th>Avg Score</th><th>Grade</th></tr></thead><tbody>';
+  for (const m of res.managerEffectiveness) {
+    const g = m.bucket ? m.bucket.grade : '?';
+    html += `<tr>
+      <td><strong>${m.name}</strong><br><span class="text-xs text-mid">${m.email}</span></td>
+      <td>${m.count}</td>
+      <td>
+        ${m.avgScore}%
+        <div class="prog-bar"><div class="prog-fill" style="width:${m.avgScore}%"></div></div>
+      </td>
+      <td><span class="grade-badge grade-${g}">${g}</span></td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('ceo-manager-table').innerHTML = html;
+
+  // Part B transparency
+  let fbHtml = '';
+  for (const r of res.partBResponses) {
+    fbHtml += `<div class="feedback-card">
+      <div class="feedback-meta"><strong>${r.submittedBy}</strong> on <strong>${r.managerName}</strong> | Total: ${r.totalScore}/25</div>
+      <div class="feedback-scores">
+        ${Object.entries(r.scores).map(([k,v]) => `<span class="fscore">${k}: <strong>${v}</strong></span>`).join('')}
+      </div>
+      ${r.comment ? `<p class="text-sm" style="color:var(--text-mid); margin-top:6px; font-style:italic">"${r.comment}"</p>` : ''}
+    </div>`;
+  }
+  document.getElementById('ceo-partb-list').innerHTML = fbHtml || '<p class="text-sm text-mid">No Part B responses yet.</p>';
+}
+
+// ─── ADMIN PANEL ─────────────────────────────────────────────
+function renderAdminPanel() {
+  refreshAdminStatus();
+  renderQuestionsTable();
+}
+
+function refreshAdminStatus() {
+  const cs = APP.cycleStatus;
+  const ps = APP.partCStatus;
+
+  // Cycle
+  const locked = cs.locked;
+  document.getElementById('admin-cycle-status-label').innerHTML =
+    `<span class="status-dot ${locked ? 'dot-red' : 'dot-green'}"></span>` +
+    (locked ? `Locked — ${cs.cycleYear} cycle complete` : `In Progress — ${cs.cycleYear} cycle open`);
+  document.getElementById('admin-lock-btn').classList.toggle('hidden', locked);
+  document.getElementById('admin-unlock-btn').classList.toggle('hidden', !locked);
+
+  // Part C
+  const released = ps.released;
+  document.getElementById('admin-partc-release-label').innerHTML =
+    `<span class="status-dot ${released ? 'dot-green' : 'dot-amber'}"></span>` +
+    (released ? `Released on ${ps.releaseDate}` : 'Not yet released to staff');
+  document.getElementById('admin-release-btn').classList.toggle('hidden', released);
+  document.getElementById('admin-retract-btn').classList.toggle('hidden', !released);
+}
+
+function renderQuestionsTable() {
+  if (!APP.questions || !APP.questions.questions) return;
+  const qs = APP.questions.questions.filter(q => q.Type !== 'Text');
+
+  let html = '<table class="data-table"><thead><tr><th>ID</th><th>Section</th><th>Label</th><th>Weight %</th><th>Action</th></tr></thead><tbody>';
+  for (const q of qs) {
+    html += `<tr>
+      <td><strong>${q.Q_ID}</strong></td>
+      <td>${q.Section}</td>
+      <td class="text-mid" style="max-width:300px; font-size:12px">${q.Sub_Label || q.Question_Text.substring(0,60) + '…'}</td>
+      <td><input type="number" value="${q.Weight_Pct}" min="0" max="100" step="0.5" 
+          id="wt-${q.Q_ID}" style="width:60px;padding:4px 6px;border:1px solid var(--stone-lt);border-radius:4px;font-size:13px"></td>
+      <td><button class="btn btn-sm btn-outline" onclick="saveQuestionWeight('${q.Q_ID}')">Save</button></td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('admin-questions-table').innerHTML = html;
+}
+
+async function saveQuestionWeight(qId) {
+  const val = parseFloat(document.getElementById('wt-' + qId).value);
+  const res = await callGAS('updateQuestion', { q_id: qId, weight_pct: val });
+  alert(res.success ? '✅ Weight updated for ' + qId : '❌ ' + (res.error || 'Failed'));
+}
+
+async function adminLockCycle() {
+  if (!confirm('Lock the ' + APP.cycleStatus.cycleYear + ' appraisal cycle? All responses will become read-only.')) return;
+  const res = await callGAS('completeCycle', {});
+  if (res.success) {
+    APP.cycleStatus.locked = true; APP.cycleStatus.status = 'COMPLETE';
+    APP.cycleLocked = true;
+    refreshAdminStatus();
+    alert('✅ Cycle locked.');
+  } else {
+    alert('❌ ' + (res.error || 'Failed'));
+  }
+}
+
+async function adminUnlockCycle() {
+  if (!confirm('Reopen the cycle? Staff will be able to edit responses again.')) return;
+  const res = await callGAS('unlockCycle', {});
+  if (res.success) {
+    APP.cycleStatus.locked = false; APP.cycleStatus.status = 'IN_PROGRESS';
+    APP.cycleLocked = false;
+    refreshAdminStatus();
+    alert('✅ Cycle reopened.');
+  } else {
+    alert('❌ ' + (res.error || 'Failed'));
+  }
+}
+
+async function adminReleasePartC(release) {
+  const msg = release
+    ? 'Release Part C feedback to all staff? Employees will be able to view their evaluations.'
+    : 'Retract Part C release? Employees will no longer see their evaluations.';
+  if (!confirm(msg)) return;
+  const res = await callGAS('releasePartC', { release });
+  if (res.success) {
+    APP.partCStatus.released = release;
+    refreshAdminStatus();
+    alert(release ? '✅ Part C released.' : '✅ Part C retracted.');
+  } else {
+    alert('❌ ' + (res.error || 'Failed'));
+  }
+}
+
+async function loadAuditLog() {
+  const res = await callGAS('getAuditLog', {});
+  if (!res.success) return;
+  let html = '<table class="data-table"><thead><tr><th>Time</th><th>User</th><th>Role</th><th>Action</th><th>Part</th><th>Target</th><th>Details</th></tr></thead><tbody>';
+  for (const log of res.logs) {
+    html += `<tr>
+      <td class="text-xs">${log.timestamp}</td>
+      <td class="text-xs">${log.email}</td>
+      <td>${log.role}</td>
+      <td><strong>${log.action}</strong></td>
+      <td>${log.part}</td>
+      <td class="text-xs text-mid">${log.target || '—'}</td>
+      <td class="text-xs text-mid">${log.changes || '—'}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('admin-audit-table').innerHTML = html;
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────
+function hideMsgs(prefix) {
+  ['locked','saved','error'].forEach(t => {
+    const el = document.getElementById(prefix + '-' + t + '-msg');
+    if (el) el.classList.add('hidden');
+  });
+}
+
+function showMsg(id, msg) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = msg; el.classList.remove('hidden'); }
+}
+
+function assignBucketFE(score) {
+  if (score >= 85) return { grade: 'A', label: 'Exceptional',        raise: '5–8%',        action: 'High-potential; stretch projects'    };
+  if (score >= 70) return { grade: 'B', label: 'Strong',             raise: '3–5%',        action: 'Specialize; leadership readiness'    };
+  if (score >= 55) return { grade: 'C', label: 'Meets Expectations', raise: '1–3%',        action: 'Structured plan; 1–2 focus areas'    };
+  if (score >= 40) return { grade: 'D', label: 'Developing',         raise: '0–1% / hold', action: 'Formal PIP or intensive development' };
+  return             { grade: 'F', label: 'At Risk',           raise: 'No raise',    action: 'Immediate intervention required'    };
+}
+
+// ─── API CALL ─────────────────────────────────────────────────
+async function callGAS(action, data) {
+  const payload = encodeURIComponent(JSON.stringify({ action, token: APP.token, data }));
+  const url = GAS_URL + '?payload=' + payload;
+  const res = await fetch(url, { redirect: 'follow' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return await res.json();
+}
+
+// ─── YEAR BADGE ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('login-year-badge').textContent = new Date().getFullYear() + ' Appraisal';
+});
+</script>
+</body>
+</html>
