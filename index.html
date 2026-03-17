@@ -811,33 +811,66 @@ function logout() {
 // INIT
 // ═══════════════════════════════════════════════
 async function initApp() {
-  setLoading(L('loading'));
-  const [myData,cycleStatus,partCStatus,questions] = await Promise.all([callGAS('getMyData',{}),callGAS('getCycleStatus',{}),callGAS('getPartCStatus',{}),callGAS('getQuestions',{})]);
-  APP.myData=myData; APP.cycleStatus=cycleStatus; APP.partCStatus=partCStatus; APP.questions=questions; APP.cycleLocked=cycleStatus.locked;
+  try {
+    setLoading('Loading your appraisal…');
 
-  // Apply language to app UI
-  applyLangToApp();
+    // Fetch all base data — if any call fails, catch it gracefully
+    let myData, cycleStatus, partCStatus, questions;
+    try {
+      [myData, cycleStatus, partCStatus, questions] = await Promise.all([
+        callGAS('getMyData',{}),
+        callGAS('getCycleStatus',{}),
+        callGAS('getPartCStatus',{}),
+        callGAS('getQuestions',{})
+      ]);
+    } catch(e) {
+      showLoginError('Could not load appraisal data. Please check your connection and try again. (' + e.message + ')');
+      showScreen('login');
+      return;
+    }
 
-  // Show role-based tabs
-  const role = APP.user.role;
-  if (role==='Manager'||role==='CEO') { show('tab-btn-partc'); show('tab-partc'); show('tab-btn-dashboard'); show('tab-dashboard'); }
-  if (role==='CEO') {
-    // CEO ribbon: Home, Part C, Manage Users, Admin ONLY
-    const hideEls = ['tab-btn-parta','tab-btn-partb','tab-parta','tab-partb','tab-btn-dashboard','tab-dashboard'];
-    hideEls.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.add('hidden'); });
-    show('tab-btn-settings'); show('tab-settings');
-    show('tab-btn-admin');    show('tab-admin');
-    // Rename Home tab to make it clear it's the dashboard
-    safeText('tab-btn-home', '🏠 Home');
+    // Validate responses
+    if (!myData||!myData.success) { showLoginError('Failed to load your data. Please try again.'); showScreen('login'); return; }
+    if (!cycleStatus||!cycleStatus.success) { showLoginError('Failed to load cycle status. Please try again.'); showScreen('login'); return; }
+
+    APP.myData      = myData;
+    APP.cycleStatus = cycleStatus;
+    APP.partCStatus = partCStatus || { released: false };
+    APP.questions   = questions   || { questions: [] };
+    APP.cycleLocked = cycleStatus.locked;
+
+    applyLangToApp();
+
+    const role = APP.user.role;
+    if (role==='Manager'||role==='CEO') { show('tab-btn-partc'); show('tab-partc'); show('tab-btn-dashboard'); show('tab-dashboard'); }
+    if (role==='CEO') {
+      ['tab-btn-parta','tab-btn-partb','tab-parta','tab-partb','tab-btn-dashboard','tab-dashboard']
+        .forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.add('hidden'); });
+      show('tab-btn-settings'); show('tab-settings');
+      show('tab-btn-admin');    show('tab-admin');
+      safeText('tab-btn-home', '🏠 Home');
+    }
+
+    renderHome();
+    if (role !== 'CEO') { renderPartAForm(); renderPartBForm(); }
+
+    // renderPartCForm is async — don't let it block the rest of init
+    if (role==='Manager'||role==='CEO') {
+      renderPartCForm().catch(e => console.warn('Part C form load failed:', e.message));
+    }
+
+    if (role==='Manager'||role==='CEO') renderDashboard();
+    if (role==='CEO') { renderAdminPanel(); loadUsers(); }
+
+    // Notifications in background — never blocks login
+    loadNotifications().catch(()=>{});
+
+    showScreen('app');
+
+  } catch(e) {
+    showLoginError('Login error: ' + e.message + '. Please refresh and try again.');
+    showScreen('login');
   }
-
-  renderHome();
-  if (role!=='CEO') { renderPartAForm(); renderPartBForm(); }
-  if (role==='Manager'||role==='CEO') await renderPartCForm();
-  if (role==='Manager'||role==='CEO') renderDashboard();
-  if (role==='CEO') { renderAdminPanel(); loadUsers(); }
-  loadNotifications();
-  showScreen('app');
 }
 
 function applyLangToApp() {
@@ -1392,7 +1425,23 @@ function showAutoSaveStatus(prefix, msg) {
   if (el) { el.textContent = msg; if (msg.startsWith('✅')) setTimeout(()=>{ if(el) el.textContent=''; }, 3000); }
 }
 
-async function callGAS(action,data){const payload=encodeURIComponent(JSON.stringify({action,token:APP.token,data}));const res=await fetch(GAS_URL+'?payload='+payload,{redirect:'follow'});if(!res.ok)throw new Error('HTTP '+res.status);return await res.json();}
+async function callGAS(action, data) {
+  const payload = encodeURIComponent(JSON.stringify({ action, token: APP.token, data }));
+  const url = GAS_URL + '?payload=' + payload;
+  // 15-second timeout — never hang forever
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(url, { redirect: 'follow', signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('Request timed out. Please check your connection and try again.');
+    throw e;
+  }
+}
 document.addEventListener('DOMContentLoaded', () => {
   // Restore saved language preference, default English
   const savedLang = localStorage.getItem('appraisal_lang') || 'en';
