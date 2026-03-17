@@ -200,7 +200,6 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
 .flex{display:flex}.gap-8{gap:8px}.items-center{align-items:center}.justify-between{justify-content:space-between}
 .text-sm{font-size:13px}.text-xs{font-size:12px}.text-mid{color:var(--text-mid)}.font-bold{font-weight:700}
 .hidden{display:none!important}
-.tracker-popup-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:999;display:none;align-items:center;justify-content:center;}
 @media(max-width:600px){
   .app-header,.tab-bar,.tab-content{padding-left:14px;padding-right:14px}
   .scale-btns{gap:5px}.login-card{padding:28px 20px}
@@ -319,7 +318,7 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
   <!-- PART A -->
   <div class="tab-content" id="tab-parta">
     <div class="section-header">
-      <div class="section-badge" id="parta-badge">My Year</div>
+      <div class="section-badge" id="parta-badge">Part A</div>
       <div><h3 id="parta-title">Self-Evaluation</h3><p id="parta-desc">8 questions about your work this year. Contributes 50 points to your final score.</p></div>
     </div>
     <div id="parta-locked-msg" class="alert alert-warn hidden"></div>
@@ -332,7 +331,7 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
   <!-- PART B -->
   <div class="tab-content" id="tab-partb">
     <div class="section-header">
-      <div class="section-badge" id="partb-badge">My Manager</div>
+      <div class="section-badge" id="partb-badge">Part B</div>
       <div><h3 id="partb-title">Feedback on Your Manager</h3><p id="partb-desc">Rate your manager on 7 areas + one open comment. Contributes 25 points.<br><span id="partb-evaluating-label">Evaluating:</span> <strong id="partb-manager-name">—</strong></p></div>
     </div>
     <div id="partb-no-manager" class="alert alert-warn hidden"></div>
@@ -355,11 +354,6 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
     <div class="q-block"><div class="q-label" id="select-emp-label">Select Employee</div><select id="partc-employee-select" onchange="loadPartCForEmployee()"><option value="" id="select-emp-option">— Select a direct report —</option></select></div>
     <div id="partc-form" class="hidden">
       <div id="partc-questions"></div>
-      <div class="q-block">
-        <div class="q-label">Overall Comments</div>
-        <div class="q-text">Overall comments on this person — strengths, areas to develop, or anything else relevant.</div>
-        <textarea id="partc-comment" placeholder="Write your overall feedback here…" rows="4" oninput="debounce('partC_comment_'+document.getElementById('partc-employee-select').value, ()=>autoSavePartCComment(), 1500)"></textarea>
-      </div>
       <div class="save-row"><button class="btn btn-primary" id="save-partc-btn" onclick="savePartC()">💾 <span id="save-partc-label">Save Evaluation</span></button><span id="partc-save-status" class="text-sm text-mid"></span></div>
     </div>
   </div>
@@ -462,17 +456,16 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
             <label>Section *</label>
             <select id="nq-section">
               <option value="">— Select —</option>
-              <option value="Part A">Part A — My Year (Self-Evaluation)</option>
-              <option value="Part B">Part B — My Manager (Upward Feedback)</option>
+              <option value="Part A">Part A (Self-Evaluation)</option>
+              <option value="Part B">Part B (Upward Feedback)</option>
               <option value="Part C">Part C (Manager Evaluation)</option>
             </select>
           </div>
           <div class="form-group">
             <label>Type *</label>
             <select id="nq-type">
-              <option value="Both">Both (text + 1–5 rating)</option>
-              <option value="Scale">Scale only (1–5 rating)</option>
-              <option value="Text">Text only (open response)</option>
+              <option value="Scale">Scale (1–5 rating)</option>
+              <option value="Text">Text (open response only)</option>
             </select>
           </div>
           <div class="form-group full">
@@ -522,8 +515,8 @@ const T = {
     loginFooter:'— secure sign-in via Google —', loginPrivacy:'Your responses are confidential and stored securely.',
     loading:'Loading your appraisal…',
     logoutBtn:'Sign out', notifTitle:'🔔 Notifications',
-    tabHome:'🏠 Home', tabPartA:'My Year', tabPartB:'My Manager', tabPartC:'Part C',
-    tabDashboard:'📊 Dashboard', tabSettings:'👥 Manage Users', tabAdmin:'🛠 Admin',
+    tabHome:'🏠 Home', tabPartA:'Part A', tabPartB:'Part B', tabPartC:'Part C',
+    tabDashboard:'📊 Dashboard', tabSettings:'⚙️ Settings', tabAdmin:'🛠 Admin',
     cycleLockedBanner:'🔒 Appraisal cycle is locked. All submissions are now read-only.',
     cycleOpenBanner:'ℹ️ The appraisal is open. You can save and come back anytime to edit until the CEO locks the cycle.',
     welcomeHeading:'Welcome, {name}!',
@@ -531,8 +524,8 @@ const T = {
     welcomeAppreciate:'Thank you for the work you do every day. Your honest and thoughtful responses help us grow as an organisation and support you better.',
     instrTitle:'📋 How to fill this appraisal',
     instrList:[
-      'Start with <strong>My Year</strong> — this is about your own experience this year. Answer honestly, there are no wrong answers.',
-      'Then complete <strong>My Manager</strong> — share your feedback about your manager. This is confidential.',
+      'Start with <strong>Part A</strong> — this is about your own experience this year. Answer honestly, there are no wrong answers.',
+      'Then complete <strong>Part B</strong> — share your feedback about your manager. This is confidential.',
       'Use the <strong>1 to 5 scale</strong>: 1 means Low/Not at all, 5 means High/Very much.',
       'You can <strong>save and come back</strong> anytime. Your responses can be edited until the cycle is locked.',
       'Take your time — this usually takes <strong>15 to 20 minutes</strong>.'
@@ -546,8 +539,8 @@ const T = {
     pendingRelease:'CEO has not released yet', notEvaluated:'Your manager has not submitted yet',
     viewDashboard:'View in Dashboard tab',
     teamStatusTitle:'Your Team — Part C Status',
-    partATitle:'My Year', partADesc:'8 questions about your work this year. Contributes 50 points to your final score.',
-    partBTitle:'My Manager', partBDesc:'Rate your manager on 7 areas + one open comment. Contributes 25 points.',
+    partATitle:'Self-Evaluation', partADesc:'8 questions about your work this year. Contributes 50 points to your final score.',
+    partBTitle:'Feedback on Your Manager', partBDesc:'Rate your manager on 7 areas + one open comment. Contributes 25 points.',
     partBEvaluating:'Evaluating:', noManagerMsg:'⚠ No manager is assigned to your profile. Please contact the admin.',
     partCTitle:'Evaluate Your Team', partCDesc:'Evaluate each direct report on 4 areas. Contributes 25 points to their score.',
     selectEmpLabel:'Select Employee', selectEmpOption:'— Select a direct report —',
@@ -603,7 +596,7 @@ const T = {
     loginFooter:'— Google के माध्यम से सुरक्षित लॉगिन —', loginPrivacy:'आपके उत्तर गोपनीय हैं और सुरक्षित रूप से संग्रहीत हैं।',
     loading:'आपका मूल्यांकन लोड हो रहा है…',
     logoutBtn:'साइन आउट', notifTitle:'🔔 सूचनाएं',
-    tabHome:'🏠 होम', tabPartA:'मेरा साल', tabPartB:'मेरे प्रबंधक', tabPartC:'भाग क',
+    tabHome:'🏠 होम', tabPartA:'भाग अ', tabPartB:'भाग ब', tabPartC:'भाग क',
     tabDashboard:'📊 डैशबोर्ड', tabSettings:'⚙️ सेटिंग्स', tabAdmin:'🛠 एडमिन',
     cycleLockedBanner:'🔒 मूल्यांकन चक्र बंद हो गया है। अब सभी उत्तर केवल पढ़ने योग्य हैं।',
     cycleOpenBanner:'ℹ️ मूल्यांकन खुला है। आप कभी भी सहेज कर वापस आ सकते हैं।',
@@ -627,8 +620,8 @@ const T = {
     pendingRelease:'CEO ने अभी जारी नहीं किया', notEvaluated:'आपके प्रबंधक ने अभी जमा नहीं किया',
     viewDashboard:'डैशबोर्ड में देखें',
     teamStatusTitle:'आपकी टीम — भाग क की स्थिति',
-    partATitle:'मेरा साल', partADesc:'इस साल के अपने काम के बारे में 8 प्रश्न। आपके अंतिम स्कोर में 50 अंक।',
-    partBTitle:'मेरे प्रबंधक', partBDesc:'7 क्षेत्रों में अपने प्रबंधक को रेटिंग दें। 25 अंक।',
+    partATitle:'स्व-मूल्यांकन', partADesc:'इस साल के अपने काम के बारे में 8 प्रश्न। आपके अंतिम स्कोर में 50 अंक।',
+    partBTitle:'अपने प्रबंधक के बारे में प्रतिक्रिया', partBDesc:'7 क्षेत्रों में अपने प्रबंधक को रेटिंग दें। 25 अंक।',
     partBEvaluating:'मूल्यांकन:', noManagerMsg:'⚠ आपके प्रोफाइल में कोई प्रबंधक नहीं जोड़ा गया है। एडमिन से संपर्क करें।',
     partCTitle:'अपनी टीम का मूल्यांकन', partCDesc:'प्रत्येक सदस्य का 4 क्षेत्रों में मूल्यांकन करें। उनके स्कोर में 25 अंक।',
     selectEmpLabel:'कर्मचारी चुनें', selectEmpOption:'— एक सदस्य चुनें —',
@@ -678,7 +671,7 @@ const T = {
     loginFooter:'— Google द्वारे सुरक्षित साइन-इन —', loginPrivacy:'तुमची उत्तरे गोपनीय आहेत आणि सुरक्षितपणे साठवली आहेत.',
     loading:'तुमचे मूल्यमापन लोड होत आहे…',
     logoutBtn:'साइन आउट', notifTitle:'🔔 सूचना',
-    tabHome:'🏠 होम', tabPartA:'मेरा साल', tabPartB:'मेरे प्रबंधक', tabPartC:'भाग क',
+    tabHome:'🏠 होम', tabPartA:'भाग अ', tabPartB:'भाग ब', tabPartC:'भाग क',
     tabDashboard:'📊 डॅशबोर्ड', tabSettings:'⚙️ सेटिंग्ज', tabAdmin:'🛠 अ‍ॅडमिन',
     cycleLockedBanner:'🔒 मूल्यमापन चक्र बंद झाले आहे. सर्व उत्तरे आता केवळ वाचण्यायोग्य आहेत.',
     cycleOpenBanner:'ℹ️ मूल्यमापन सुरू आहे. तुम्ही कधीही जतन करून परत येऊ शकता.',
@@ -702,8 +695,8 @@ const T = {
     pendingRelease:'CEO ने अजून जारी केले नाही', notEvaluated:'तुमच्या व्यवस्थापकाने अजून सादर केले नाही',
     viewDashboard:'डॅशबोर्डमध्ये पहा',
     teamStatusTitle:'तुमची टीम — भाग क ची स्थिती',
-    partATitle:'माझे वर्ष', partADesc:'या वर्षीच्या तुमच्या कामाबद्दल 8 प्रश्न. अंतिम स्कोरमध्ये 50 गुण.',
-    partBTitle:'माझे व्यवस्थापक', partBDesc:'7 क्षेत्रांमध्ये तुमच्या व्यवस्थापकाला रेटिंग द्या. 25 गुण.',
+    partATitle:'स्वमूल्यमापन', partADesc:'या वर्षीच्या तुमच्या कामाबद्दल 8 प्रश्न. अंतिम स्कोरमध्ये 50 गुण.',
+    partBTitle:'तुमच्या व्यवस्थापकाबद्दल अभिप्राय', partBDesc:'7 क्षेत्रांमध्ये तुमच्या व्यवस्थापकाला रेटिंग द्या. 25 गुण.',
     partBEvaluating:'मूल्यमापन:', noManagerMsg:'⚠ तुमच्या प्रोफाइलमध्ये कोणताही व्यवस्थापक जोडलेला नाही. अ‍ॅडमिनशी संपर्क करा.',
     partCTitle:'तुमच्या टीमचे मूल्यमापन', partCDesc:'प्रत्येक सदस्याचे 4 क्षेत्रांमध्ये मूल्यमापन करा. त्यांच्या स्कोरमध्ये 25 गुण.',
     selectEmpLabel:'कर्मचारी निवडा', selectEmpOption:'— एक सदस्य निवडा —',
@@ -822,13 +815,10 @@ async function initApp() {
   const role = APP.user.role;
   if (role==='Manager'||role==='CEO') { show('tab-btn-partc'); show('tab-partc'); show('tab-btn-dashboard'); show('tab-dashboard'); }
   if (role==='CEO') {
-    // CEO ribbon: Home, Part C, Manage Users, Admin ONLY
-    const hideEls = ['tab-btn-parta','tab-btn-partb','tab-parta','tab-partb','tab-btn-dashboard','tab-dashboard'];
+    // CEO does not use Part A or Part B — hide those tabs entirely
+    const hideEls = ['tab-btn-parta','tab-btn-partb','tab-parta','tab-partb'];
     hideEls.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.add('hidden'); });
-    show('tab-btn-settings'); show('tab-settings');
-    show('tab-btn-admin');    show('tab-admin');
-    // Rename Home tab to make it clear it's the dashboard
-    safeText('tab-btn-home', '🏠 Home');
+    show('tab-btn-settings'); show('tab-settings'); show('tab-btn-admin'); show('tab-admin');
   }
 
   renderHome();
@@ -1147,38 +1137,20 @@ function loadPartCForEmployee(){
   if(!email){document.getElementById('partc-form').classList.add('hidden');return;}
   document.getElementById('partc-form').classList.remove('hidden');
   ['C1','C2','C3','C4'].forEach(k=>{SCALES[k]=0;for(let i=1;i<=5;i++){const btn=document.getElementById(`scale-${k}-${i}`);if(btn){btn.classList.remove('selected');btn.disabled=APP.cycleLocked;}}});
-  const commentEl=document.getElementById('partc-comment'); if(commentEl){commentEl.value=''; commentEl.disabled=APP.cycleLocked;}
   const existing=(APP.myData.partCSubmitted||[]).find(x=>x.employeeEmail.toLowerCase()===email.toLowerCase());
-  if(existing){
-    ['C1','C2','C3','C4'].forEach(k=>setScaleValue(k,existing.scores[k]));
-    const commentEl=document.getElementById('partc-comment');
-    if(commentEl) commentEl.value = existing.comment||'';
-  } else {
-    const commentEl=document.getElementById('partc-comment');
-    if(commentEl) commentEl.value='';
-  }
+  if(existing){['C1','C2','C3','C4'].forEach(k=>setScaleValue(k,existing.scores[k]));}
   if(APP.cycleLocked){setEl('partc-locked-msg',L('lockedMsg'),true,true);document.getElementById('save-partc-btn').disabled=true;}
 }
-async function autoSavePartCComment(){
-  const email = document.getElementById('partc-employee-select').value;
-  if(!email||APP.cycleLocked||!APP.token) return;
-  const comment = (document.getElementById('partc-comment')||{}).value||'';
-  const existing = (APP.myData.partCSubmitted||[]).find(x=>x.employeeEmail.toLowerCase()===email.toLowerCase());
-  if(!existing) return; // only autosave comment if ratings already saved
-  const data = { employeeEmail:email, C1:existing.scores.C1, C2:existing.scores.C2, C3:existing.scores.C3, C4:existing.scores.C4, comment };
-  try { await callGAS('submitPartC', data); showAutoSaveStatus('partc','✅ Comment saved'); } catch(e){}
-}
-
 async function savePartC(){
   const btn=document.getElementById('save-partc-btn'); hideMsgs('partc');
   const email=document.getElementById('partc-employee-select').value;
   if(!email){setEl('partc-error-msg','Please select an employee before saving.',true,true);return;}
-  const data={employeeEmail:email, comment:(document.getElementById('partc-comment')||{}).value||''};
+  const data={employeeEmail:email};
   for(const k of['C1','C2','C3','C4']){data[k]=SCALES[k]||0;if(!data[k]){setEl('partc-error-msg','Please rate all four areas.',true,true);return;}}
   btn.disabled=true; btn.querySelector('span').textContent='…';
   try{
     const res=await callGAS('submitPartC',data);
-    if(res.success){setEl('partc-saved-msg','✅ '+L('saveEval')+' — '+res.score+'/25',true,true);const idx=(APP.myData.partCSubmitted||[]).findIndex(x=>x.employeeEmail.toLowerCase()===email.toLowerCase());const entry={employeeEmail:email,scores:{C1:data.C1,C2:data.C2,C3:data.C3,C4:data.C4},totalScore:res.score,comment:data.comment||''};if(!APP.myData.partCSubmitted)APP.myData.partCSubmitted=[];if(idx>=0)APP.myData.partCSubmitted[idx]=entry;else APP.myData.partCSubmitted.push(entry);safeText('partc-save-status', L('savedJustNow'));renderHome();}
+    if(res.success){setEl('partc-saved-msg','✅ '+L('saveEval')+' — '+res.score+'/25',true,true);const idx=(APP.myData.partCSubmitted||[]).findIndex(x=>x.employeeEmail.toLowerCase()===email.toLowerCase());const entry={employeeEmail:email,scores:{C1:data.C1,C2:data.C2,C3:data.C3,C4:data.C4},totalScore:res.score};if(!APP.myData.partCSubmitted)APP.myData.partCSubmitted=[];if(idx>=0)APP.myData.partCSubmitted[idx]=entry;else APP.myData.partCSubmitted.push(entry);safeText('partc-save-status', L('savedJustNow'));renderHome();}
     else setEl('partc-error-msg',res.error||'Save failed.',true,true);
   }catch(e){setEl('partc-error-msg','Network error: '+e.message,true,true);}
   btn.disabled=false; btn.querySelector('span').textContent=L('saveEval');
@@ -1212,10 +1184,7 @@ function renderDashboard(){
   if(partCBox){
     if(d.partC&&d.partC.available){
       const s=d.partC.data;
-      const commentHtml = d.partC.comment
-        ? `<div style="margin-top:10px;padding:10px 14px;background:var(--cream-dk);border-radius:8px;border-left:3px solid var(--forest)"><p class="text-xs" style="color:var(--stone);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Manager's Comments</p><p class="text-sm">${d.partC.comment}</p></div>`
-        : '';
-      partCBox.innerHTML=`<p class="text-sm text-mid mb-8">${L('partCBy')} <strong>${d.partC.managerName}</strong> &nbsp;|&nbsp; Total: <strong>${d.partC.score}/25</strong></p><div class="feedback-scores">${['C1','C2','C3','C4'].map((k,i)=>`<span class="fscore">${L('partC')[i].label}: <strong>${s[k]}/5</strong></span>`).join('')}</div>${commentHtml}`;
+      partCBox.innerHTML=`<p class="text-sm text-mid mb-8">${L('partCBy')} <strong>${d.partC.managerName}</strong> &nbsp;|&nbsp; Total: <strong>${d.partC.score}/25</strong></p><div class="feedback-scores">${['C1','C2','C3','C4'].map((k,i)=>`<span class="fscore">${L('partC')[i].label}: <strong>${s[k]}/5</strong></span>`).join('')}</div>`;
     } else if(APP.partCStatus&&APP.partCStatus.released){ partCBox.innerHTML=`<p class="text-sm text-mid">${L('partCPending')}</p>`; }
     else { partCBox.innerHTML=`<p class="text-sm text-mid">${L('partCNotReleased')}</p>`; }
   }
@@ -1232,44 +1201,28 @@ async function loadCEODashboard(){
   const pctA  = total>0?Math.round((doneA/total)*100):0;
   const pctB  = total>0?Math.round((doneB/total)*100):0;
   const pctC  = total>0?Math.round((doneC/total)*100):0;
-  // Build pending name lists for hyperlinks
-  const pendingA = res.employees.filter(e=>e.scoreA===0).map(e=>e.name);
-  const pendingB = res.employees.filter(e=>e.scoreB===0&&e.managerEmail).map(e=>e.name);
-  const pendingC = res.employees.filter(e=>e.scoreC===0).map(e=>e.name);
-  const doneANames = res.employees.filter(e=>e.scoreA>0).map(e=>e.name);
-  const doneBNames = res.employees.filter(e=>e.scoreB>0).map(e=>e.name);
-
-  function namePopup(names, title) {
-    const list = names.map(n=>`<li style="padding:4px 0;border-bottom:1px solid var(--stone-lt)">${n}</li>`).join('');
-    safeHtml('tracker-popup', `<div style="font-weight:600;margin-bottom:10px;color:var(--forest)">${title}</div><ul style="list-style:none;margin:0;padding:0;font-size:14px">${list}</ul><button class="btn btn-sm btn-outline" style="margin-top:12px;width:100%" onclick="safeHtml('tracker-popup','');document.getElementById('tracker-popup-wrap').style.display='none'">Close</button>`);
-    document.getElementById('tracker-popup-wrap').style.display='block';
-  }
-
-  function trackerCard(done, pending, total, pct, label, color) {
-    const hasPending = pending.length > 0;
-    const pendingLink = hasPending
-      ? `<div style="margin-top:6px"><a href="#" style="font-size:11px;color:var(--forest);text-decoration:underline" onclick="event.preventDefault();namePopup(${JSON.stringify(pending)},'⏳ Not yet submitted — ${label}')">⚠ ${pending.length} pending — see names</a></div>`
-      : `<div style="margin-top:6px;font-size:11px;color:#059669">✅ All submitted</div>`;
-    const doneLink = done > 0
-      ? `<a href="#" style="font-size:28px;font-weight:700;color:var(--forest);font-family:'Lora',serif;text-decoration:none" onclick="event.preventDefault();namePopup(${JSON.stringify(res.employees.filter(e=>e['score'+label[label.length-1]]>0||label==='Part A'?e.scoreA>0:label==='Part B'?e.scoreB>0:e.scoreC>0).map(e=>e.name)}, '✅ Submitted — ${label}')">${done}</a>`
-      : `<span style="font-size:28px;font-weight:700;color:var(--forest);font-family:'Lora',serif">0</span>`;
-    return `<div style="background:var(--cream-dk);border-radius:10px;padding:16px;text-align:center">
-      <div style="font-size:28px;font-weight:700;color:var(--forest);font-family:'Lora',serif">${done}<span style="font-size:14px;opacity:.6"> / ${total}</span></div>
-      <div style="font-size:12px;color:var(--stone);text-transform:uppercase;letter-spacing:.05em;margin:4px 0">${label}</div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
-      ${pendingLink}
-    </div>`;
-  }
-
   safeHtml('completion-tracker', `
-    <div id="tracker-popup-wrap" style="display:none;background:white;border:1px solid var(--stone-lt);border-radius:10px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-lg)">
-      <div id="tracker-popup"></div>
-    </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:10px">
-      ${trackerCard(doneA, pendingA, total, pctA, 'My Year (A)', '#CA2130')}
-      ${trackerCard(doneB, pendingB, total, pctB, 'My Manager (B)', '#CA2130')}
-      ${trackerCard(doneC, pendingC, total, pctC, 'Part C (Mgr)', '#CA2130')}
+      <div style="text-align:center;background:var(--cream-dk);border-radius:10px;padding:16px">
+        <div style="font-size:28px;font-weight:700;color:var(--forest);font-family:'Lora',serif">${doneA}<span style="font-size:14px;opacity:.6"> / ${total}</span></div>
+        <div style="font-size:12px;color:var(--stone);text-transform:uppercase;letter-spacing:.05em;margin:4px 0">Part A Submitted</div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${pctA}%"></div></div>
+        <div style="font-size:11px;color:var(--stone);margin-top:4px">${pctA}% complete</div>
+      </div>
+      <div style="text-align:center;background:var(--cream-dk);border-radius:10px;padding:16px">
+        <div style="font-size:28px;font-weight:700;color:var(--forest);font-family:'Lora',serif">${doneB}<span style="font-size:14px;opacity:.6"> / ${total}</span></div>
+        <div style="font-size:12px;color:var(--stone);text-transform:uppercase;letter-spacing:.05em;margin:4px 0">Part B Submitted</div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${pctB}%"></div></div>
+        <div style="font-size:11px;color:var(--stone);margin-top:4px">${pctB}% complete</div>
+      </div>
+      <div style="text-align:center;background:var(--cream-dk);border-radius:10px;padding:16px">
+        <div style="font-size:28px;font-weight:700;color:var(--forest);font-family:'Lora',serif">${doneC}<span style="font-size:14px;opacity:.6"> / ${total}</span></div>
+        <div style="font-size:12px;color:var(--stone);text-transform:uppercase;letter-spacing:.05em;margin:4px 0">Part C Evaluated</div>
+        <div class="prog-bar"><div class="prog-fill" style="width:${pctC}%"></div></div>
+        <div style="font-size:11px;color:var(--stone);margin-top:4px">${pctC}% complete</div>
+      </div>
     </div>
+    ${doneA<total ? '<p class="text-xs" style="color:var(--amber);margin-top:4px">⚠ '+( total-doneA)+' staff have not submitted Part A yet.</p>' : '<p class="text-xs" style="color:#065F46">✅ All staff have submitted Part A.</p>'}
   `);
   APP._lastDashData = res;
   document.getElementById('ceo-org-table').innerHTML='<table class="data-table"><thead><tr><th>Name</th><th>Team</th><th>Role</th><th>A/50</th><th>B/25</th><th>C/25</th><th>Final</th><th>Grade</th></tr></thead><tbody>'+res.orgScorecard.map(emp=>{const g=emp.bucket?emp.bucket.grade:'?';return`<tr><td><strong>${emp.name}</strong></td><td class="text-mid">${emp.team}</td><td class="text-mid">${emp.role}</td><td>${emp.scoreA}</td><td>${emp.scoreB}</td><td>${emp.scoreC}</td><td><strong>${emp.finalScore}</strong></td><td><span class="grade-badge grade-${g}">${g}</span></td></tr>`;}).join('')+'</tbody></table>';
