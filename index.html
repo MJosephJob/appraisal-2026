@@ -811,66 +811,33 @@ function logout() {
 // INIT
 // ═══════════════════════════════════════════════
 async function initApp() {
-  try {
-    setLoading('Loading your appraisal…');
+  setLoading(L('loading'));
+  const [myData,cycleStatus,partCStatus,questions] = await Promise.all([callGAS('getMyData',{}),callGAS('getCycleStatus',{}),callGAS('getPartCStatus',{}),callGAS('getQuestions',{})]);
+  APP.myData=myData; APP.cycleStatus=cycleStatus; APP.partCStatus=partCStatus; APP.questions=questions; APP.cycleLocked=cycleStatus.locked;
 
-    // Fetch all base data — if any call fails, catch it gracefully
-    let myData, cycleStatus, partCStatus, questions;
-    try {
-      [myData, cycleStatus, partCStatus, questions] = await Promise.all([
-        callGAS('getMyData',{}),
-        callGAS('getCycleStatus',{}),
-        callGAS('getPartCStatus',{}),
-        callGAS('getQuestions',{})
-      ]);
-    } catch(e) {
-      showLoginError('Could not load appraisal data. Please check your connection and try again. (' + e.message + ')');
-      showScreen('login');
-      return;
-    }
+  // Apply language to app UI
+  applyLangToApp();
 
-    // Validate responses
-    if (!myData||!myData.success) { showLoginError('Failed to load your data. Please try again.'); showScreen('login'); return; }
-    if (!cycleStatus||!cycleStatus.success) { showLoginError('Failed to load cycle status. Please try again.'); showScreen('login'); return; }
-
-    APP.myData      = myData;
-    APP.cycleStatus = cycleStatus;
-    APP.partCStatus = partCStatus || { released: false };
-    APP.questions   = questions   || { questions: [] };
-    APP.cycleLocked = cycleStatus.locked;
-
-    applyLangToApp();
-
-    const role = APP.user.role;
-    if (role==='Manager'||role==='CEO') { show('tab-btn-partc'); show('tab-partc'); show('tab-btn-dashboard'); show('tab-dashboard'); }
-    if (role==='CEO') {
-      ['tab-btn-parta','tab-btn-partb','tab-parta','tab-partb','tab-btn-dashboard','tab-dashboard']
-        .forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.add('hidden'); });
-      show('tab-btn-settings'); show('tab-settings');
-      show('tab-btn-admin');    show('tab-admin');
-      safeText('tab-btn-home', '🏠 Home');
-    }
-
-    renderHome();
-    if (role !== 'CEO') { renderPartAForm(); renderPartBForm(); }
-
-    // renderPartCForm is async — don't let it block the rest of init
-    if (role==='Manager'||role==='CEO') {
-      renderPartCForm().catch(e => console.warn('Part C form load failed:', e.message));
-    }
-
-    if (role==='Manager'||role==='CEO') renderDashboard();
-    if (role==='CEO') { renderAdminPanel(); loadUsers(); }
-
-    // Notifications in background — never blocks login
-    loadNotifications().catch(()=>{});
-
-    showScreen('app');
-
-  } catch(e) {
-    showLoginError('Login error: ' + e.message + '. Please refresh and try again.');
-    showScreen('login');
+  // Show role-based tabs
+  const role = APP.user.role;
+  if (role==='Manager'||role==='CEO') { show('tab-btn-partc'); show('tab-partc'); show('tab-btn-dashboard'); show('tab-dashboard'); }
+  if (role==='CEO') {
+    // CEO ribbon: Home, Part C, Manage Users, Admin ONLY
+    const hideEls = ['tab-btn-parta','tab-btn-partb','tab-parta','tab-partb','tab-btn-dashboard','tab-dashboard'];
+    hideEls.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.add('hidden'); });
+    show('tab-btn-settings'); show('tab-settings');
+    show('tab-btn-admin');    show('tab-admin');
+    // Rename Home tab to make it clear it's the dashboard
+    safeText('tab-btn-home', '🏠 Home');
   }
+
+  renderHome();
+  if (role!=='CEO') { renderPartAForm(); renderPartBForm(); }
+  if (role==='Manager'||role==='CEO') await renderPartCForm();
+  if (role==='Manager'||role==='CEO') renderDashboard();
+  if (role==='CEO') { renderAdminPanel(); loadUsers(); }
+  loadNotifications();
+  showScreen('app');
 }
 
 function applyLangToApp() {
@@ -1255,103 +1222,193 @@ function renderDashboard(){
   safeHtml('dash-guidance',`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap"><div class="grade-badge grade-${bucket.grade}" style="width:44px;height:44px;font-size:22px">${bucket.grade}</div><div><p><strong>Raise guidance:</strong> ${bucket.raise}</p><p class="text-sm text-mid mt-8"><strong>Development:</strong> ${bucket.action}</p></div></div>`);
 }
 async function loadCEODashboard(){
-  try {
-    const res = await callGAS('getCEODashboard',{});
-    if(!res||!res.success) return;
+  const res=await callGAS('getCEODashboard',{});if(!res.success)return;
 
-    const total = res.employees.length;
-    const doneA = res.orgScorecard.filter(e=>e.scoreA>0).length;
-    const doneB = res.orgScorecard.filter(e=>e.scoreB>0).length;
-    const doneC = res.orgScorecard.filter(e=>e.scoreC>0).length;
-    const pctA  = total>0?Math.round((doneA/total)*100):0;
-    const pctB  = total>0?Math.round((doneB/total)*100):0;
-    const pctC  = total>0?Math.round((doneC/total)*100):0;
+  // Completion tracker
+  const total = res.employees.length;
+  const doneA = res.orgScorecard.filter(e=>e.scoreA>0).length;
+  const doneB = res.orgScorecard.filter(e=>e.scoreB>0).length;
+  const doneC = res.orgScorecard.filter(e=>e.scoreC>0).length;
+  const pctA  = total>0?Math.round((doneA/total)*100):0;
+  const pctB  = total>0?Math.round((doneB/total)*100):0;
+  const pctC  = total>0?Math.round((doneC/total)*100):0;
+  // Build pending name lists for hyperlinks
+  const pendingA = res.employees.filter(e=>e.scoreA===0).map(e=>e.name);
+  const pendingB = res.employees.filter(e=>e.scoreB===0&&e.managerEmail).map(e=>e.name);
+  const pendingC = res.employees.filter(e=>e.scoreC===0).map(e=>e.name);
+  const doneANames = res.employees.filter(e=>e.scoreA>0).map(e=>e.name);
+  const doneBNames = res.employees.filter(e=>e.scoreB>0).map(e=>e.name);
 
-    // Store pending lists globally so onclick handlers can access safely
-    APP._pendingA = res.orgScorecard.filter(e=>e.scoreA===0).map(e=>e.name);
-    APP._pendingB = res.orgScorecard.filter(e=>e.scoreB===0&&e.managerEmail).map(e=>e.name);
-    APP._pendingC = res.orgScorecard.filter(e=>e.scoreC===0).map(e=>e.name);
-    APP._lastDashData = res;
-
-    // Build tracker cards
-    function mkCard(done, pendingKey, pct, label) {
-      const pending = APP[pendingKey] || [];
-      const pendingHtml = pending.length > 0
-        ? '<div style="margin-top:6px"><a href="#" class="tracker-link" style="font-size:11px;color:var(--forest);text-decoration:underline" data-key="' + pendingKey + '" data-title="Not submitted - ' + label + '">⚠ ' + pending.length + ' pending — see names</a></div>'
-        : '<div style="margin-top:6px;font-size:11px;color:#059669">✅ All submitted</div>';
-      return '<div style="background:var(--cream-dk);border-radius:10px;padding:16px;text-align:center">' +
-        '<div style="font-size:28px;font-weight:700;color:var(--forest);font-family:Lora,serif">' + done + '<span style="font-size:14px;opacity:.6"> / ' + total + '</span></div>' +
-        '<div style="font-size:12px;color:var(--stone);text-transform:uppercase;letter-spacing:.05em;margin:4px 0">' + label + '</div>' +
-        '<div class="prog-bar"><div class="prog-fill" style="width:' + pct + '%"></div></div>' +
-        pendingHtml +
-        '</div>';
-    }
-
-    const trackerHtml =
-      '<div id="tracker-popup-wrap" style="display:none;background:white;border:1px solid var(--stone-lt);border-radius:10px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-lg)">' +
-        '<div id="tracker-popup"></div>' +
-      '</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:10px">' +
-        mkCard(doneA, '_pendingA', pctA, 'My Year') +
-        mkCard(doneB, '_pendingB', pctB, 'My Manager') +
-        mkCard(doneC, '_pendingC', pctC, 'Part C') +
-      '</div>';
-
-    safeHtml('completion-tracker', trackerHtml);
-
-    // Wire up the popup links after render
-    setTimeout(()=>{
-      document.querySelectorAll('.tracker-link').forEach(link=>{
-        link.addEventListener('click', function(e){
-          e.preventDefault();
-          const key   = this.getAttribute('data-key');
-          const title = this.getAttribute('data-title');
-          const names = APP[key] || [];
-          const list  = names.length
-            ? names.map(n=>'<li style="padding:6px 0;border-bottom:1px solid var(--stone-lt)">' + n + '</li>').join('')
-            : '<li style="padding:6px 0;color:var(--stone)">None</li>';
-          safeHtml('tracker-popup',
-            '<div style="font-weight:600;margin-bottom:10px;color:var(--forest)">' + title + '</div>' +
-            '<ul style="list-style:none;margin:0;padding:0;font-size:14px">' + list + '</ul>' +
-            '<button class="btn btn-sm btn-outline" style="margin-top:12px;width:100%" onclick="closeTrackerPopup()">Close</button>'
-          );
-          const wrap = document.getElementById('tracker-popup-wrap');
-          if(wrap) wrap.style.display='block';
-        });
-      });
-    }, 100);
-
-    // Org scorecard
-    let scoreHtml = '<table class="data-table"><thead><tr><th>Name</th><th>Team</th><th>Role</th><th>My Year</th><th>My Mgr</th><th>Part C</th><th>Final</th><th>Grade</th></tr></thead><tbody>';
-    res.orgScorecard.forEach(emp=>{
-      const g = emp.bucket ? emp.bucket.grade : '?';
-      scoreHtml += '<tr><td><strong>' + emp.name + '</strong></td><td class="text-mid">' + emp.team + '</td><td class="text-mid">' + emp.role + '</td><td>' + emp.scoreA + '</td><td>' + emp.scoreB + '</td><td>' + emp.scoreC + '</td><td><strong>' + emp.finalScore + '</strong></td><td><span class="grade-badge grade-' + g + '">' + g + '</span></td></tr>';
-    });
-    scoreHtml += '</tbody></table>';
-    safeHtml('ceo-org-table', scoreHtml);
-
-    // Manager effectiveness
-    let mgHtml = '<table class="data-table"><thead><tr><th>Manager</th><th>Respondents</th><th>Avg Score</th><th>Grade</th></tr></thead><tbody>';
-    res.managerEffectiveness.forEach(m=>{
-      const g = m.bucket ? m.bucket.grade : '?';
-      mgHtml += '<tr><td><strong>' + m.name + '</strong><br><span class="text-xs text-mid">' + m.email + '</span></td><td>' + m.count + '</td><td>' + m.avgScore + '%<div class="prog-bar"><div class="prog-fill" style="width:' + m.avgScore + '%"></div></div></td><td><span class="grade-badge grade-' + g + '">' + g + '</span></td></tr>';
-    });
-    mgHtml += '</tbody></table>';
-    safeHtml('ceo-manager-table', mgHtml);
-
-    // Part B transparency
-    let partBHtml = '';
-    res.partBResponses.forEach(r=>{
-      const scores = Object.entries(r.scores).map(([k,v])=>'<span class="fscore">' + k + ': <strong>' + v + '</strong></span>').join('');
-      const comment = r.comment ? '<p class="text-sm" style="color:var(--text-mid);margin-top:6px;font-style:italic">&ldquo;' + r.comment + '&rdquo;</p>' : '';
-      partBHtml += '<div class="feedback-card"><div class="feedback-meta"><strong>' + r.submittedBy + '</strong> on <strong>' + r.managerName + '</strong> | ' + r.totalScore + '/25</div><div class="feedback-scores">' + scores + '</div>' + comment + '</div>';
-    });
-    safeHtml('ceo-partb-list', partBHtml || '<p class="text-sm text-mid">No Part B responses yet.</p>');
-
-  } catch(e) {
-    console.error('CEO Dashboard error:', e);
-    safeHtml('completion-tracker', '<p class="text-sm text-mid">Dashboard failed to load. Please refresh.</p>');
+  function namePopup(names, title) {
+    const list = names.map(n=>`<li style="padding:4px 0;border-bottom:1px solid var(--stone-lt)">${n}</li>`).join('');
+    safeHtml('tracker-popup', `<div style="font-weight:600;margin-bottom:10px;color:var(--forest)">${title}</div><ul style="list-style:none;margin:0;padding:0;font-size:14px">${list}</ul><button class="btn btn-sm btn-outline" style="margin-top:12px;width:100%" onclick="safeHtml('tracker-popup','');document.getElementById('tracker-popup-wrap').style.display='none'">Close</button>`);
+    document.getElementById('tracker-popup-wrap').style.display='block';
   }
+
+  function trackerCard(done, pending, total, pct, label, color) {
+    const hasPending = pending.length > 0;
+    const pendingLink = hasPending
+      ? `<div style="margin-top:6px"><a href="#" style="font-size:11px;color:var(--forest);text-decoration:underline" onclick="event.preventDefault();namePopup(${JSON.stringify(pending)},'⏳ Not yet submitted — ${label}')">⚠ ${pending.length} pending — see names</a></div>`
+      : `<div style="margin-top:6px;font-size:11px;color:#059669">✅ All submitted</div>`;
+    const doneLink = done > 0
+      ? `<a href="#" style="font-size:28px;font-weight:700;color:var(--forest);font-family:'Lora',serif;text-decoration:none" onclick="event.preventDefault();namePopup(${JSON.stringify(res.employees.filter(e=>e['score'+label[label.length-1]]>0||label==='Part A'?e.scoreA>0:label==='Part B'?e.scoreB>0:e.scoreC>0).map(e=>e.name)}, '✅ Submitted — ${label}')">${done}</a>`
+      : `<span style="font-size:28px;font-weight:700;color:var(--forest);font-family:'Lora',serif">0</span>`;
+    return `<div style="background:var(--cream-dk);border-radius:10px;padding:16px;text-align:center">
+      <div style="font-size:28px;font-weight:700;color:var(--forest);font-family:'Lora',serif">${done}<span style="font-size:14px;opacity:.6"> / ${total}</span></div>
+      <div style="font-size:12px;color:var(--stone);text-transform:uppercase;letter-spacing:.05em;margin:4px 0">${label}</div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+      ${pendingLink}
+    </div>`;
+  }
+
+  safeHtml('completion-tracker', `
+    <div id="tracker-popup-wrap" style="display:none;background:white;border:1px solid var(--stone-lt);border-radius:10px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-lg)">
+      <div id="tracker-popup"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:10px">
+      ${trackerCard(doneA, pendingA, total, pctA, 'My Year (A)', '#CA2130')}
+      ${trackerCard(doneB, pendingB, total, pctB, 'My Manager (B)', '#CA2130')}
+      ${trackerCard(doneC, pendingC, total, pctC, 'Part C (Mgr)', '#CA2130')}
+    </div>
+  `);
+  APP._lastDashData = res;
+  document.getElementById('ceo-org-table').innerHTML='<table class="data-table"><thead><tr><th>Name</th><th>Team</th><th>Role</th><th>A/50</th><th>B/25</th><th>C/25</th><th>Final</th><th>Grade</th></tr></thead><tbody>'+res.orgScorecard.map(emp=>{const g=emp.bucket?emp.bucket.grade:'?';return`<tr><td><strong>${emp.name}</strong></td><td class="text-mid">${emp.team}</td><td class="text-mid">${emp.role}</td><td>${emp.scoreA}</td><td>${emp.scoreB}</td><td>${emp.scoreC}</td><td><strong>${emp.finalScore}</strong></td><td><span class="grade-badge grade-${g}">${g}</span></td></tr>`;}).join('')+'</tbody></table>';
+  document.getElementById('ceo-manager-table').innerHTML='<table class="data-table"><thead><tr><th>Manager</th><th>Respondents</th><th>Avg Score</th><th>Grade</th></tr></thead><tbody>'+res.managerEffectiveness.map(m=>{const g=m.bucket?m.bucket.grade:'?';return`<tr><td><strong>${m.name}</strong><br><span class="text-xs text-mid">${m.email}</span></td><td>${m.count}</td><td>${m.avgScore}%<div class="prog-bar"><div class="prog-fill" style="width:${m.avgScore}%"></div></div></td><td><span class="grade-badge grade-${g}">${g}</span></td></tr>`;}).join('')+'</tbody></table>';
+  document.getElementById('ceo-partb-list').innerHTML=res.partBResponses.map(r=>`<div class="feedback-card"><div class="feedback-meta"><strong>${r.submittedBy}</strong> on <strong>${r.managerName}</strong> | ${r.totalScore}/25</div><div class="feedback-scores">${Object.entries(r.scores).map(([k,v])=>`<span class="fscore">${k}: <strong>${v}</strong></span>`).join('')}</div>${r.comment?`<p class="text-sm" style="color:var(--text-mid);margin-top:6px;font-style:italic">"${r.comment}"</p>`:''}</div>`).join('')||'<p class="text-sm text-mid">No Part B responses yet.</p>';
+}
+
+// ═══════════════════════════════════════════════
+// SETTINGS — USERS
+// ═══════════════════════════════════════════════
+async function loadUsers(){
+  const res=await callGAS('getUsers',{});
+  if(!res.success){document.getElementById('user-list').innerHTML='<p class="text-sm text-mid">Failed to load users.</p>';return;}
+  APP.allUsers=res.users; renderUserList(res.users);
+}
+function filterUsers(){const q=document.getElementById('user-search').value.toLowerCase();renderUserList(APP.allUsers.filter(u=>u.name.toLowerCase().includes(q)||u.email.toLowerCase().includes(q)));}
+function renderUserList(users){
+  if(!users||users.length===0){document.getElementById('user-list').innerHTML='<p class="text-sm text-mid">No users found.</p>';return;}
+  document.getElementById('user-list').innerHTML=users.map(u=>`<div class="user-row ${u.active?'':'inactive-user'}" style="opacity:${u.active?1:.5}"><div class="user-info"><div class="uname">${u.name} <span class="role-tag role-${u.role}">${u.role}</span>${!u.active?'<span style="color:var(--red);font-size:11px;margin-left:6px">INACTIVE</span>':''}</div><div class="umeta">${u.email}${u.team?' · '+u.team:''}${u.managerEmail?' · Reports to: '+u.managerEmail:''}</div></div><div style="display:flex;gap:6px">${u.active?`<button class="btn btn-sm btn-danger" onclick="removeUser('${u.email}','${u.name}')">Remove</button>`:`<button class="btn btn-sm btn-outline" onclick="reactivateUser('${u.email}','${u.name}')">Reactivate</button>`}</div></div>`).join('');
+}
+async function addUser(){
+  const name=document.getElementById('new-name').value.trim(),email=document.getElementById('new-email').value.trim(),role=document.getElementById('new-role').value,team=document.getElementById('new-team').value.trim(),mgr=document.getElementById('new-manager').value.trim();
+  const msg=document.getElementById('add-user-msg');
+  if(!name||!email||!role){msg.textContent='❌ Name, email and role are required.';msg.style.color='var(--red)';return;}
+  msg.textContent='Adding…';msg.style.color='var(--text-mid)';
+  const res=await callGAS('addUser',{name,email,role,team,managerEmail:mgr});
+  if(res.success){msg.textContent='✅ User added!';msg.style.color='#065F46';['new-name','new-email','new-team','new-manager'].forEach(id=>document.getElementById(id).value='');document.getElementById('new-role').value='';await loadUsers();}
+  else{msg.textContent='❌ '+res.error;msg.style.color='var(--red)';}
+}
+async function removeUser(email,name){if(!confirm(`Remove ${name}?\n\nThey will be deactivated. Their responses are preserved.`))return;const res=await callGAS('removeUser',{email});if(res.success)await loadUsers();else alert('❌ '+res.error);}
+async function reactivateUser(email,name){if(!confirm(`Reactivate ${name}?`))return;const res=await callGAS('updateUser',{email,active:true});if(res.success)await loadUsers();else alert('❌ '+res.error);}
+
+// ═══════════════════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════════════════
+function renderAdminPanel(){ refreshAdminStatus(); renderQuestionEditor(); }
+function refreshAdminStatus(){
+  const cs=APP.cycleStatus,ps=APP.partCStatus,locked=cs.locked,released=ps.released;
+  document.getElementById('admin-cycle-status-label').innerHTML=`<span class="status-dot ${locked?'dot-red':'dot-green'}"></span>${locked?`Locked — ${cs.cycleYear} complete`:`In Progress — ${cs.cycleYear} open`}`;
+  document.getElementById('admin-lock-btn').classList.toggle('hidden',locked);
+  document.getElementById('admin-unlock-btn').classList.toggle('hidden',!locked);
+  document.getElementById('admin-partc-release-label').innerHTML=`<span class="status-dot ${released?'dot-green':'dot-amber'}"></span>${released?`Released on ${ps.releaseDate}`:'Not yet released to staff'}`;
+  document.getElementById('admin-release-btn').classList.toggle('hidden',released);
+  document.getElementById('admin-retract-btn').classList.toggle('hidden',!released);
+}
+function renderQuestionEditor(){
+  if(!APP.questions||!APP.questions.questions)return;
+  // Show all non-Text questions (both active and inactive so CEO can see removed ones)
+  const qs=APP.questions.questions.filter(q=>q.Type!=='Text');
+  let html='';
+  ['Part A','Part B','Part C'].forEach(sec=>{
+    const secQs=qs.filter(q=>q.Section===sec);
+    if(secQs.length===0)return;
+    html+=`<span class="section-divider-lbl">${sec}</span>`;
+    secQs.forEach(q=>{
+      const inactive = q.Active===false||q.Active==='FALSE';
+      html+=`<div class="q-edit-row" style="${inactive?'opacity:.45;':''}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="q-id-badge">${q.Q_ID}</span>
+          ${inactive
+            ? `<button class="btn btn-sm btn-outline" style="font-size:12px;padding:4px 10px" onclick="toggleQuestion('${q.Q_ID}',true)">↺ Restore</button>`
+            : `<button class="btn btn-sm btn-danger"  style="font-size:12px;padding:4px 10px" onclick="toggleQuestion('${q.Q_ID}',false)">🗑 Remove</button>`
+          }
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label style="font-size:11px;font-weight:600;color:var(--stone);text-transform:uppercase;letter-spacing:.05em">Question Text</label>
+          <textarea id="qtext-${q.Q_ID}" rows="2" style="min-height:55px;font-size:13px" ${inactive?'disabled':''}>${q.Question_Text}</textarea>
+        </div>
+        <div class="q-edit-actions">
+          <span class="text-sm text-mid">Weight:</span>
+          <input class="wt-input" type="number" id="wt-${q.Q_ID}" value="${q.Weight_Pct}" min="0" max="100" step="0.5" ${inactive?'disabled':''}>
+          <span class="text-xs text-mid">%</span>
+          ${inactive?'':`<button class="btn btn-sm btn-primary" onclick="saveQuestion('${q.Q_ID}')">Save</button>`}
+          <span id="qsave-${q.Q_ID}" class="text-xs text-mid"></span>
+        </div>
+      </div>`;
+    });
+  });
+  document.getElementById('question-editor').innerHTML=html;
+}
+
+async function addQuestion(){
+  const section = document.getElementById('nq-section').value;
+  const type    = document.getElementById('nq-type').value;
+  const text    = document.getElementById('nq-text').value.trim();
+  const label   = document.getElementById('nq-label').value.trim();
+  const weight  = parseFloat(document.getElementById('nq-weight').value)||0;
+  const msg     = document.getElementById('add-q-msg');
+  if(!section||!text){ msg.textContent='❌ Section and question text are required.'; msg.style.color='var(--red)'; return; }
+  msg.textContent='Adding…'; msg.style.color='var(--text-mid)';
+  const res = await callGAS('addQuestion',{ section, type, question_text:text, sub_label:label, weight_pct:weight });
+  if(res.success){
+    msg.textContent='✅ Question added!'; msg.style.color='#065F46';
+    document.getElementById('nq-section').value='';
+    document.getElementById('nq-text').value='';
+    document.getElementById('nq-label').value='';
+    document.getElementById('nq-weight').value='';
+    // Reload questions and re-render editor
+    const qRes = await callGAS('getQuestions',{});
+    if(qRes.success){ APP.questions=qRes; renderQuestionEditor(); }
+  } else { msg.textContent='❌ '+res.error; msg.style.color='var(--red)'; }
+  setTimeout(()=>msg.textContent='',4000);
+}
+
+async function toggleQuestion(qId, activate){
+  const action = activate ? 'Restore' : 'Remove';
+  if(!confirm(action+' question '+qId+'?')) return;
+  const res = await callGAS('updateQuestion',{q_id:qId, active:activate});
+  if(res.success){
+    const qRes = await callGAS('getQuestions',{});
+    if(qRes.success){ APP.questions=qRes; renderQuestionEditor(); }
+  } else { alert('❌ '+(res.error||'Failed')); }
+}
+async function saveQuestion(qId){
+  const text=document.getElementById('qtext-'+qId).value.trim(),wt=parseFloat(document.getElementById('wt-'+qId).value),st=document.getElementById('qsave-'+qId);
+  st.textContent='Saving…';
+  const res=await callGAS('updateQuestion',{q_id:qId,question_text:text,weight_pct:wt});
+  if(res.success){st.textContent='✅';setTimeout(()=>st.textContent='',2000);}else{st.textContent='❌';st.style.color='var(--red)';}
+}
+async function adminLockCycle(){if(!confirm('Lock the '+APP.cycleStatus.cycleYear+' cycle? All responses will become read-only.'))return;const res=await callGAS('completeCycle',{});if(res.success){APP.cycleStatus.locked=true;APP.cycleLocked=true;refreshAdminStatus();alert('✅ Cycle locked.');}else alert('❌ '+(res.error||'Failed'));}
+async function adminUnlockCycle(){if(!confirm('Reopen the cycle?'))return;const res=await callGAS('unlockCycle',{});if(res.success){APP.cycleStatus.locked=false;APP.cycleLocked=false;refreshAdminStatus();alert('✅ Cycle reopened.');}else alert('❌ '+(res.error||'Failed'));}
+async function adminReleasePartC(release){if(!confirm(release?'Release Part C feedback to all staff?':'Retract Part C release?'))return;const res=await callGAS('releasePartC',{release});if(res.success){APP.partCStatus.released=release;refreshAdminStatus();loadNotifications();alert(release?'✅ Part C released.':'✅ Retracted.');}else alert('❌ '+(res.error||'Failed'));}
+async function loadAuditLog(){const res=await callGAS('getAuditLog',{});if(!res.success)return;document.getElementById('admin-audit-table').innerHTML='<table class="data-table"><thead><tr><th>Time</th><th>User</th><th>Role</th><th>Action</th><th>Part</th><th>Target</th><th>Details</th></tr></thead><tbody>'+res.logs.map(l=>`<tr><td class="text-xs">${l.timestamp}</td><td class="text-xs">${l.email}</td><td>${l.role}</td><td><strong>${l.action}</strong></td><td>${l.part}</td><td class="text-xs text-mid">${l.target||'—'}</td><td class="text-xs text-mid">${l.changes||'—'}</td></tr>`).join('')+'</tbody></table>';}
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function show(id){const el=document.getElementById(id);if(el)el.classList.remove('hidden');}
+function hideMsgs(prefix){['locked','saved','error'].forEach(t=>{const el=document.getElementById(prefix+'-'+t+'-msg');if(el)el.classList.add('hidden');});}
+function setEl(id,text,isHtml,visible){const el=document.getElementById(id);if(!el)return;if(isHtml)el.innerHTML=text;else el.textContent=text;el.classList.toggle('hidden',!visible);}
+// Safe setter — never crashes if element doesn't exist
+function safeText(id,text){const el=document.getElementById(id);if(el)el.textContent=text;}
+function safeHtml(id,html){const el=document.getElementById(id);if(el)el.innerHTML=html;}
+function assignBucketFE(score){
+  if(score>=85)return{grade:'A',label:'Exceptional',        raise:'5–8%',        action:'High-potential; stretch projects'};
+  if(score>=70)return{grade:'B',label:'Strong',             raise:'3–5%',        action:'Specialize; leadership readiness'};
+  if(score>=55)return{grade:'C',label:'Meets Expectations', raise:'1–3%',        action:'Structured plan; 1–2 focus areas'};
+  if(score>=40)return{grade:'D',label:'Developing',         raise:'0–1% / hold', action:'Formal PIP or intensive development'};
+  return         {grade:'F',label:'At Risk',           raise:'No raise',    action:'Immediate intervention required'};
 }
 function exportSummary(){
   const msg = document.getElementById('export-msg');
@@ -1425,23 +1482,7 @@ function showAutoSaveStatus(prefix, msg) {
   if (el) { el.textContent = msg; if (msg.startsWith('✅')) setTimeout(()=>{ if(el) el.textContent=''; }, 3000); }
 }
 
-async function callGAS(action, data) {
-  const payload = encodeURIComponent(JSON.stringify({ action, token: APP.token, data }));
-  const url = GAS_URL + '?payload=' + payload;
-  // 15-second timeout — never hang forever
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
-  try {
-    const res = await fetch(url, { redirect: 'follow', signal: controller.signal });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return await res.json();
-  } catch(e) {
-    clearTimeout(timer);
-    if (e.name === 'AbortError') throw new Error('Request timed out. Please check your connection and try again.');
-    throw e;
-  }
-}
+async function callGAS(action,data){const payload=encodeURIComponent(JSON.stringify({action,token:APP.token,data}));const res=await fetch(GAS_URL+'?payload='+payload,{redirect:'follow'});if(!res.ok)throw new Error('HTTP '+res.status);return await res.json();}
 document.addEventListener('DOMContentLoaded', () => {
   // Restore saved language preference, default English
   const savedLang = localStorage.getItem('appraisal_lang') || 'en';
