@@ -268,7 +268,7 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
     <button class="tab-btn"        data-tab="partb"     onclick="switchTab('partb')"     id="tab-btn-partb">Part B</button>
     <button class="tab-btn hidden" data-tab="partc"     onclick="switchTab('partc')"     id="tab-btn-partc">Part C</button>
     <button class="tab-btn hidden" data-tab="dashboard" onclick="switchTab('dashboard')" id="tab-btn-dashboard">📊 Dashboard</button>
-    <button class="tab-btn hidden" data-tab="settings"  onclick="switchTab('settings')"  id="tab-btn-settings">⚙️ Settings</button>
+    <button class="tab-btn hidden" data-tab="settings"  onclick="switchTab('settings')"  id="tab-btn-settings">👥 Users</button>
     <button class="tab-btn hidden" data-tab="admin"     onclick="switchTab('admin')"     id="tab-btn-admin">🛠 Admin</button>
   </div>
 
@@ -276,23 +276,36 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
   <div class="tab-content active" id="tab-home">
     <div id="cycle-locked-banner" class="alert alert-warn hidden"></div>
     <div id="cycle-open-banner"   class="alert alert-info  hidden"></div>
-    <div class="welcome-hero">
-      <h3 id="welcome-heading">Welcome!</h3>
-      <p  id="welcome-msg"></p>
-      <p  class="appreciate" id="welcome-appreciate"></p>
+
+    <!-- CEO sees this synopsis dashboard -->
+    <div id="ceo-home-synopsis" class="hidden">
+      <div class="welcome-hero" style="padding:22px 28px">
+        <h3 id="welcome-heading" style="font-size:19px">Welcome!</h3>
+        <p id="welcome-msg" style="opacity:.9;margin-top:4px"></p>
+      </div>
+      <div id="ceo-home-stats" style="margin-bottom:16px"></div>
+      <div class="dash-card hidden" id="manager-home-section">
+        <h4 id="team-status-title">Your Team — Part C Status</h4>
+        <div id="team-partc-status"></div>
+      </div>
     </div>
-    <div class="alert alert-info" style="margin-bottom:16px;font-size:13px">
-      🔒 <strong>Confidentiality Notice:</strong> Your responses in Part A and Part B are stored securely in the organisation's system. Part A (self-evaluation) is visible to your manager and the CEO. Part B (feedback on your manager) is visible to the CEO only — your manager does not see it until the CEO chooses to share it. Part C (your manager's evaluation of you) is released to you only when the CEO approves. No response is shared outside this appraisal process.
-    </div>
-    <div class="instructions-card" id="instructions-card">
-      <h4 id="instructions-title">📋 How to fill this appraisal</h4>
-      <ul class="instr-list" id="instructions-list"></ul>
-      <div class="time-badge">⏱ <span id="time-estimate">15–20 minutes</span></div>
-    </div>
-    <div class="status-grid" id="status-grid"></div>
-    <div class="dash-card hidden" id="manager-home-section">
-      <h4 id="team-status-title">Your Team — Part C Status</h4>
-      <div id="team-partc-status"></div>
+
+    <!-- Staff/Manager sees this intro -->
+    <div id="staff-home-content">
+      <div class="welcome-hero">
+        <h3 id="welcome-heading-staff">Welcome!</h3>
+        <p  id="welcome-msg-staff"></p>
+        <p  class="appreciate" id="welcome-appreciate"></p>
+      </div>
+      <div class="alert alert-info" style="margin-bottom:16px;font-size:13px">
+        🔒 <strong>Confidentiality Notice:</strong> Your responses in Part A and Part B are stored securely in the organisation's system. Part A (self-evaluation) is visible to your manager and the CEO. Part B (feedback on your manager) is visible to the CEO only. Part C (your manager's evaluation of you) is released to you only when the CEO approves. No response is shared outside this appraisal process.
+      </div>
+      <div class="instructions-card" id="instructions-card">
+        <h4 id="instructions-title">📋 How to fill this appraisal</h4>
+        <ul class="instr-list" id="instructions-list"></ul>
+        <div class="time-badge">⏱ <span id="time-estimate">15–20 minutes</span></div>
+      </div>
+      <div class="status-grid" id="status-grid"></div>
     </div>
   </div>
 
@@ -375,7 +388,7 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
 
   <!-- SETTINGS -->
   <div class="tab-content hidden" id="tab-settings">
-    <h3 style="font-size:18px;color:var(--forest);margin-bottom:18px">⚙️ Settings</h3>
+    <h3 style="font-size:18px;color:var(--forest);margin-bottom:18px">👥 Add / Manage Users</h3>
     <div class="dash-card">
       <h4>Add New User</h4>
       <div class="add-user-form">
@@ -427,7 +440,48 @@ input[type=text]:focus,input[type=email]:focus{outline:none;border-color:var(--f
     </div>
     <div class="dash-card">
       <h4>Edit Questions</h4>
-      <p class="text-sm text-mid mb-8">Edit question text and weights below. Click Save on each question to apply changes.</p>
+      <p class="text-sm text-mid mb-8">Edit existing questions below, or add a new one. Click Save on each question to apply changes.</p>
+
+      <!-- Add new question form -->
+      <div style="background:var(--cream-dk);border-radius:10px;padding:18px;margin-bottom:18px">
+        <h4 style="font-size:14px;color:var(--forest);margin-bottom:14px">➕ Add New Question</h4>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Section *</label>
+            <select id="nq-section">
+              <option value="">— Select —</option>
+              <option value="Part A">Part A (Self-Evaluation)</option>
+              <option value="Part B">Part B (Upward Feedback)</option>
+              <option value="Part C">Part C (Manager Evaluation)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Type *</label>
+            <select id="nq-type">
+              <option value="Scale">Scale (1–5 rating)</option>
+              <option value="Text">Text (open response only)</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Question Text *</label>
+            <textarea id="nq-text" rows="2" placeholder="Type the full question here…" style="min-height:60px;font-size:13px"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Short Label</label>
+            <input type="text" id="nq-label" placeholder="e.g. Communication, Growth">
+          </div>
+          <div class="form-group">
+            <label>Weight % (Scale only)</label>
+            <input type="number" id="nq-weight" placeholder="e.g. 12.5" min="0" max="100" step="0.5">
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+          <button class="btn btn-primary btn-sm" onclick="addQuestion()">➕ Add Question</button>
+          <span id="add-q-msg" class="text-sm"></span>
+        </div>
+      </div>
+
+      <!-- Existing questions -->
       <div id="question-editor"></div>
     </div>
     <div class="dash-card">
@@ -754,10 +808,16 @@ async function initApp() {
   // Show role-based tabs
   const role = APP.user.role;
   if (role==='Manager'||role==='CEO') { show('tab-btn-partc'); show('tab-partc'); show('tab-btn-dashboard'); show('tab-dashboard'); }
-  if (role==='CEO') { show('tab-btn-settings'); show('tab-settings'); show('tab-btn-admin'); show('tab-admin'); }
+  if (role==='CEO') {
+    // CEO does not use Part A or Part B — hide those tabs entirely
+    const hideEls = ['tab-btn-parta','tab-btn-partb','tab-parta','tab-partb'];
+    hideEls.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.add('hidden'); });
+    show('tab-btn-settings'); show('tab-settings'); show('tab-btn-admin'); show('tab-admin');
+  }
 
-  renderHome(); renderPartAForm(); renderPartBForm();
-  if (role==='Manager'||role==='CEO') renderPartCForm();
+  renderHome();
+  if (role!=='CEO') { renderPartAForm(); renderPartBForm(); }
+  if (role==='Manager'||role==='CEO') await renderPartCForm();
   if (role==='Manager'||role==='CEO') renderDashboard();
   if (role==='CEO') { renderAdminPanel(); loadUsers(); }
   loadNotifications();
@@ -833,18 +893,75 @@ document.addEventListener('click', e=>{ if (!e.target.closest('#notif-btn')&&!e.
 // HOME
 // ═══════════════════════════════════════════════
 function renderHome() {
-  const d=APP.myData; const locked=APP.cycleLocked; const lang=APP.lang;
+  const d=APP.myData; const locked=APP.cycleLocked;
   const name = APP.user.name.split(' ')[0];
   const year = APP.cycleStatus.cycleYear;
-
-  safeText('welcome-heading', L('welcomeHeading').replace('{name}',name));
-  safeText('welcome-msg', L('welcomeMsg').replace('{year}',year));
-  safeText('welcome-appreciate', L('welcomeAppreciate'));
+  const isCEO = APP.user.role === 'CEO';
 
   if (locked) { setEl('cycle-locked-banner', L('cycleLockedBanner'), false, true); setEl('cycle-open-banner','',false,false); }
   else        { setEl('cycle-open-banner', L('cycleOpenBanner'), false, true); setEl('cycle-locked-banner','',false,false); }
 
-  // Status cards
+  if (isCEO) {
+    // Show CEO synopsis, hide staff content
+    show('ceo-home-synopsis');
+    const staffDiv = document.getElementById('staff-home-content');
+    if (staffDiv) staffDiv.style.display='none';
+
+    safeText('welcome-heading', 'Welcome, ' + name);
+    safeText('welcome-msg', year + ' Appraisal — Cycle ' + (locked ? 'LOCKED' : 'IN PROGRESS'));
+
+    // CEO stats: pull from myData (directReports + partCSubmitted)
+    const reports   = d.directReports   || [];
+    const submitted = d.partCSubmitted  || [];
+    const doneC     = submitted.length;
+    const cycleLabel = locked
+      ? '<span style="color:var(--red);font-weight:600">🔒 Locked</span>'
+      : '<span style="color:#059669;font-weight:600">✅ Open</span>';
+    const partCReleased = APP.partCStatus && APP.partCStatus.released;
+
+    safeHtml('ceo-home-stats', `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px">
+        <div class="status-card done">
+          <div class="label">Cycle Status</div>
+          <div style="margin-top:6px;font-size:14px">${cycleLabel}</div>
+          <div class="sub mt-4">${year} appraisal cycle</div>
+        </div>
+        <div class="status-card ${doneC>0?'done':'warn'}">
+          <div class="label">Your Part C</div>
+          <div class="val">${doneC} / ${reports.length}</div>
+          <div class="sub">Direct reports evaluated</div>
+        </div>
+        <div class="status-card ${partCReleased?'done':'lock'}">
+          <div class="label">Part C Release</div>
+          <div style="margin-top:6px;font-size:14px">${partCReleased?'<span style="color:#059669;font-weight:600">✅ Released</span>':'<span style="color:var(--stone);font-weight:600">⏳ Not released</span>'}</div>
+          <div class="sub mt-4">Staff feedback visibility</div>
+        </div>
+        <div class="status-card lock">
+          <div class="label">Full Org View</div>
+          <div style="margin-top:6px;font-size:13px;color:var(--forest);font-weight:500">📊 Dashboard tab</div>
+          <div class="sub mt-4">Scores, grades & Part B</div>
+        </div>
+      </div>
+    `);
+
+    // Team Part C status
+    if (reports.length > 0) {
+      show('manager-home-section');
+      const doneEmails = submitted.map(x=>x.employeeEmail.toLowerCase());
+      document.getElementById('team-partc-status').innerHTML =
+        '<table class="data-table"><thead><tr><th>Name</th><th>Team</th><th>Part C</th><th>Score</th></tr></thead><tbody>'+
+        reports.map(r=>{const done=doneEmails.includes(r.email.toLowerCase());const sub=submitted.find(x=>x.employeeEmail.toLowerCase()===r.email.toLowerCase());
+          return`<tr><td><strong>${r.name}</strong></td><td class="text-mid">${r.team}</td><td>${done?'✅ Submitted':'<span style="color:var(--amber)">⏳ Pending</span>'}</td><td>${done&&sub?sub.totalScore+'/25':'—'}</td></tr>`;
+        }).join('')+'</tbody></table>';
+    }
+    return;
+  }
+
+  // ── STAFF / MANAGER home ──
+  safeText('welcome-heading-staff', L('welcomeHeading').replace('{name}',name));
+  safeText('welcome-msg-staff',     L('welcomeMsg').replace('{year}',year));
+  safeText('welcome-appreciate',    L('welcomeAppreciate'));
+
   const partADone=d.partA&&d.partA.submitted;
   const partBDone=d.partB&&d.partB.submitted;
   const hasCFeedback=d.partC&&d.partC.available;
@@ -857,11 +974,10 @@ function renderHome() {
   cards+=statusCard(L('statusScore'),L('statusScoreDesc'),total+'/100','done','Grade '+bucket.grade+' — '+bucket.label);
   document.getElementById('status-grid').innerHTML=cards;
 
-  // Manager team status
-  if (APP.user.role==='Manager'||APP.user.role==='CEO') {
+  if (APP.user.role==='Manager') {
     show('manager-home-section');
-    const reports=APP.myData.directReports||[];
-    const submitted=APP.myData.partCSubmitted||[];
+    const reports=d.directReports||[];
+    const submitted=d.partCSubmitted||[];
     const doneEmails=submitted.map(x=>x.employeeEmail.toLowerCase());
     document.getElementById('team-partc-status').innerHTML = reports.length===0 ? '<p class="text-sm text-mid">No direct reports found.</p>' :
       '<table class="data-table"><thead><tr><th>Name</th><th>Team</th><th>Part C</th><th>Score</th></tr></thead><tbody>'+
@@ -983,11 +1099,18 @@ async function savePartB(){
 // ═══════════════════════════════════════════════
 // PART C
 // ═══════════════════════════════════════════════
-function renderPartCForm(){
-  const reports=APP.myData.directReports||[];
+async function renderPartCForm(){
+  // Always fetch direct reports fresh to avoid stale data
+  let reports = APP.myData.directReports||[];
+  if(reports.length===0){
+    try{
+      const res = await callGAS('getDirectReportsList',{});
+      if(res.success&&res.reports) reports = res.reports;
+    }catch(e){}
+  }
   const select=document.getElementById('partc-employee-select');
   select.innerHTML=`<option value="">${L('selectEmpOption')}</option>`;
-  reports.forEach(r=>select.innerHTML+=`<option value="${r.email}">${r.name} (${r.team})</option>`);
+  reports.forEach(r=>select.innerHTML+=`<option value="${r.email}">${r.name} (${r.team||''})</option>`);
   APP.directReports=reports;
   const cqs=L('partC');
   let html='';
@@ -1133,13 +1256,71 @@ function refreshAdminStatus(){
 }
 function renderQuestionEditor(){
   if(!APP.questions||!APP.questions.questions)return;
+  // Show all non-Text questions (both active and inactive so CEO can see removed ones)
   const qs=APP.questions.questions.filter(q=>q.Type!=='Text');
   let html='';
   ['Part A','Part B','Part C'].forEach(sec=>{
+    const secQs=qs.filter(q=>q.Section===sec);
+    if(secQs.length===0)return;
     html+=`<span class="section-divider-lbl">${sec}</span>`;
-    qs.filter(q=>q.Section===sec).forEach(q=>{html+=`<div class="q-edit-row"><span class="q-id-badge">${q.Q_ID}</span><div class="form-group" style="margin-bottom:8px"><label style="font-size:11px;font-weight:600;color:var(--stone);text-transform:uppercase;letter-spacing:.05em">Question Text</label><textarea id="qtext-${q.Q_ID}" rows="2" style="min-height:55px;font-size:13px">${q.Question_Text}</textarea></div><div class="q-edit-actions"><span class="text-sm text-mid">Weight:</span><input class="wt-input" type="number" id="wt-${q.Q_ID}" value="${q.Weight_Pct}" min="0" max="100" step="0.5"><span class="text-xs text-mid">%</span><button class="btn btn-sm btn-primary" onclick="saveQuestion('${q.Q_ID}')">Save</button><span id="qsave-${q.Q_ID}" class="text-xs text-mid"></span></div></div>`;});
+    secQs.forEach(q=>{
+      const inactive = q.Active===false||q.Active==='FALSE';
+      html+=`<div class="q-edit-row" style="${inactive?'opacity:.45;':''}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="q-id-badge">${q.Q_ID}</span>
+          ${inactive
+            ? `<button class="btn btn-sm btn-outline" style="font-size:12px;padding:4px 10px" onclick="toggleQuestion('${q.Q_ID}',true)">↺ Restore</button>`
+            : `<button class="btn btn-sm btn-danger"  style="font-size:12px;padding:4px 10px" onclick="toggleQuestion('${q.Q_ID}',false)">🗑 Remove</button>`
+          }
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label style="font-size:11px;font-weight:600;color:var(--stone);text-transform:uppercase;letter-spacing:.05em">Question Text</label>
+          <textarea id="qtext-${q.Q_ID}" rows="2" style="min-height:55px;font-size:13px" ${inactive?'disabled':''}>${q.Question_Text}</textarea>
+        </div>
+        <div class="q-edit-actions">
+          <span class="text-sm text-mid">Weight:</span>
+          <input class="wt-input" type="number" id="wt-${q.Q_ID}" value="${q.Weight_Pct}" min="0" max="100" step="0.5" ${inactive?'disabled':''}>
+          <span class="text-xs text-mid">%</span>
+          ${inactive?'':`<button class="btn btn-sm btn-primary" onclick="saveQuestion('${q.Q_ID}')">Save</button>`}
+          <span id="qsave-${q.Q_ID}" class="text-xs text-mid"></span>
+        </div>
+      </div>`;
+    });
   });
   document.getElementById('question-editor').innerHTML=html;
+}
+
+async function addQuestion(){
+  const section = document.getElementById('nq-section').value;
+  const type    = document.getElementById('nq-type').value;
+  const text    = document.getElementById('nq-text').value.trim();
+  const label   = document.getElementById('nq-label').value.trim();
+  const weight  = parseFloat(document.getElementById('nq-weight').value)||0;
+  const msg     = document.getElementById('add-q-msg');
+  if(!section||!text){ msg.textContent='❌ Section and question text are required.'; msg.style.color='var(--red)'; return; }
+  msg.textContent='Adding…'; msg.style.color='var(--text-mid)';
+  const res = await callGAS('addQuestion',{ section, type, question_text:text, sub_label:label, weight_pct:weight });
+  if(res.success){
+    msg.textContent='✅ Question added!'; msg.style.color='#065F46';
+    document.getElementById('nq-section').value='';
+    document.getElementById('nq-text').value='';
+    document.getElementById('nq-label').value='';
+    document.getElementById('nq-weight').value='';
+    // Reload questions and re-render editor
+    const qRes = await callGAS('getQuestions',{});
+    if(qRes.success){ APP.questions=qRes; renderQuestionEditor(); }
+  } else { msg.textContent='❌ '+res.error; msg.style.color='var(--red)'; }
+  setTimeout(()=>msg.textContent='',4000);
+}
+
+async function toggleQuestion(qId, activate){
+  const action = activate ? 'Restore' : 'Remove';
+  if(!confirm(action+' question '+qId+'?')) return;
+  const res = await callGAS('updateQuestion',{q_id:qId, active:activate});
+  if(res.success){
+    const qRes = await callGAS('getQuestions',{});
+    if(qRes.success){ APP.questions=qRes; renderQuestionEditor(); }
+  } else { alert('❌ '+(res.error||'Failed')); }
 }
 async function saveQuestion(qId){
   const text=document.getElementById('qtext-'+qId).value.trim(),wt=parseFloat(document.getElementById('wt-'+qId).value),st=document.getElementById('qsave-'+qId);
